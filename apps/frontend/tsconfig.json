@@ -1,5 +1,5 @@
 {
-	"include": ["**/*.ts", "**/*.tsx", "eslint.config.js", "vite.config.js", "../backend/src/db/auth-schema.ts", "../backend/src/auth.ts"],
+	"include": ["**/*.ts", "**/*.tsx", "eslint.config.js", "vite.config.js"],
 
 	"compilerOptions": {
 		"target": "ES2022",
