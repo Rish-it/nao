@@ -4,6 +4,9 @@ from enum import Enum
 
 from ibis import BaseBackend
 from pydantic import BaseModel, Field
+from rich.console import Console
+
+console = Console()
 
 
 class DatabaseType(str, Enum):
@@ -11,6 +14,8 @@ class DatabaseType(str, Enum):
 
     BIGQUERY = "bigquery"
     DUCKDB = "duckdb"
+    DATABRICKS = "databricks"
+    SNOWFLAKE = "snowflake"
 
 
 class AccessorType(str, Enum):

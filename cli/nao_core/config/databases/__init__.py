@@ -1,23 +1,26 @@
-from typing import Union
+from typing import Annotated, Union
+
+from pydantic import Discriminator, Tag
 
 from .base import AccessorType, DatabaseConfig, DatabaseType
 from .bigquery import BigQueryConfig
+from .databricks import DatabricksConfig
 from .duckdb import DuckDBConfig
+from .snowflake import SnowflakeConfig
 
 # =============================================================================
 # Database Config Registry
 # =============================================================================
 
-# When adding more backends, convert this to a discriminated union:
-# AnyDatabaseConfig = Annotated[
-#     Union[
-#         Annotated[BigQueryConfig, Tag("bigquery")],
-#         Annotated[PostgresConfig, Tag("postgres")],
-#     ],
-#     Discriminator(lambda x: x.get("type", "bigquery")),
-# ]
-
-AnyDatabaseConfig = Union[BigQueryConfig, DuckDBConfig]
+AnyDatabaseConfig = Annotated[
+    Union[
+        Annotated[BigQueryConfig, Tag("bigquery")],
+        Annotated[DatabricksConfig, Tag("databricks")],
+        Annotated[SnowflakeConfig, Tag("snowflake")],
+        Annotated[DuckDBConfig, Tag("duckdb")],
+    ],
+    Discriminator("type"),
+]
 
 
 def parse_database_config(data: dict) -> DatabaseConfig:
@@ -27,8 +30,21 @@ def parse_database_config(data: dict) -> DatabaseConfig:
         return BigQueryConfig.model_validate(data)
     elif db_type == "duckdb":
         return DuckDBConfig.model_validate(data)
+    elif db_type == "databricks":
+        return DatabricksConfig.model_validate(data)
+    elif db_type == "snowflake":
+        return SnowflakeConfig.model_validate(data)
     else:
         raise ValueError(f"Unknown database type: {db_type}")
 
 
-__all__ = ["AccessorType", "DatabaseConfig", "DatabaseType", "BigQueryConfig", "DuckDBConfig", "AnyDatabaseConfig"]
+__all__ = [
+    "AccessorType",
+    "AnyDatabaseConfig",
+    "BigQueryConfig",
+    "DuckDBConfig",
+    "DatabaseConfig",
+    "DatabaseType",
+    "DatabricksConfig",
+    "SnowflakeConfig",
+]

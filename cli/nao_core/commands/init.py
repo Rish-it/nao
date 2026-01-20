@@ -11,21 +11,18 @@ from nao_core.config import (
     AnyDatabaseConfig,
     BigQueryConfig,
     DatabaseType,
+    DatabricksConfig,
     DuckDBConfig,
     LLMConfig,
     LLMProvider,
     NaoConfig,
     SlackConfig,
+    SnowflakeConfig,
 )
+from nao_core.config.exceptions import InitError
 from nao_core.config.repos import RepoConfig
 
 console = Console()
-
-
-class InitError(Exception):
-    """Base exception for init command errors."""
-
-    pass
 
 
 class EmptyProjectNameError(InitError):
@@ -86,38 +83,22 @@ def setup_project_name(force: bool = False) -> tuple[str, Path]:
 
 def setup_bigquery() -> BigQueryConfig:
     """Setup a BigQuery database configuration."""
-    console.print("\n[bold cyan]BigQuery Configuration[/bold cyan]\n")
-
-    name = Prompt.ask("[bold]Connection name[/bold]", default="bigquery-prod")
-
-    project_id = Prompt.ask("[bold]GCP Project ID[/bold]")
-    if not project_id:
-        raise InitError("GCP Project ID cannot be empty.")
-
-    dataset_id = Prompt.ask("[bold]Default dataset[/bold] [dim](optional, press Enter to skip)[/dim]", default="")
-
-    credentials_path = Prompt.ask(
-        "[bold]Service account JSON path[/bold] [dim](optional, uses ADC if empty)[/dim]",
-        default="",
-    )
-
-    return BigQueryConfig(
-        name=name,
-        project_id=project_id,
-        dataset_id=dataset_id or None,
-        credentials_path=credentials_path or None,
-    )
+    return BigQueryConfig.promptConfig()
 
 
 def setup_duckdb() -> DuckDBConfig:
     """Setup a DuckDB database configuration."""
-    console.print("\n[bold cyan]DuckDB Configuration[/bold cyan]\n")
+    return DuckDBConfig.promptConfig()
 
-    name = Prompt.ask("[bold]Connection name[/bold]", default="duckdb-memory")
 
-    path = Prompt.ask("[bold]Path to the DuckDB database file[/bold]", default=":memory:")
+def setup_databricks() -> DatabricksConfig:
+    """Setup a Databricks database configuration."""
+    return DatabricksConfig.promptConfig()
 
-    return DuckDBConfig(name=name, path=path)
+
+def setup_snowflake() -> SnowflakeConfig:
+    """Setup a Snowflake database configuration."""
+    return SnowflakeConfig.promptConfig()
 
 
 def setup_databases() -> list[AnyDatabaseConfig]:
@@ -146,6 +127,16 @@ def setup_databases() -> list[AnyDatabaseConfig]:
 
         elif db_type == DatabaseType.DUCKDB.value:
             db_config = setup_duckdb()
+            databases.append(db_config)
+            console.print(f"\n[bold green]✓[/bold green] Added database [cyan]{db_config.name}[/cyan]")
+
+        elif db_type == DatabaseType.DATABRICKS.value:
+            db_config = setup_databricks()
+            databases.append(db_config)
+            console.print(f"\n[bold green]✓[/bold green] Added database [cyan]{db_config.name}[/cyan]")
+
+        elif db_type == DatabaseType.SNOWFLAKE.value:
+            db_config = setup_snowflake()
             databases.append(db_config)
             console.print(f"\n[bold green]✓[/bold green] Added database [cyan]{db_config.name}[/cyan]")
 
