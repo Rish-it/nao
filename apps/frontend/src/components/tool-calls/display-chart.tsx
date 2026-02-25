@@ -27,11 +27,15 @@ export const DisplayChartToolCall = ({
 
 	const showRangeSelector = config?.chart_type !== 'pie' && config?.x_axis_type === 'date';
 
-	const handleDownload = () => {
+	const handleDownload = async () => {
 		if (!chartRef.current) {
 			return;
 		}
-		downloadChartAsPng(chartRef.current, config?.title || 'chart');
+		try {
+			await downloadChartAsPng(chartRef.current, config?.title || 'chart');
+		} catch (error) {
+			console.error('Failed to download chart:', error);
+		}
 	};
 
 	const sourceData = useMemo(() => {

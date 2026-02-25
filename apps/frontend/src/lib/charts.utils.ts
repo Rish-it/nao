@@ -131,7 +131,11 @@ function svgToPngDownload(svgUrl: string, width: number, height: number, filenam
 			canvas.width = width * scale;
 			canvas.height = height * scale;
 
-			const ctx = canvas.getContext('2d')!;
+			const ctx = canvas.getContext('2d');
+			if (!ctx) {
+				reject(new Error('Failed to create canvas context'));
+				return;
+			}
 			ctx.scale(scale, scale);
 			ctx.fillStyle = '#ffffff';
 			ctx.fillRect(0, 0, width, height);
