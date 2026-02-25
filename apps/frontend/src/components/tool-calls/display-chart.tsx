@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { BarChart, Bar, AreaChart, Area, PieChart, Pie, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { Download } from 'lucide-react';
 import { useAgentContext } from '../../contexts/agent.provider';
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent } from '../ui/chart';
 import { TextShimmer } from '../ui/text-shimmer';
 import { Skeleton } from '../ui/skeleton';
+import { Button } from '../ui/button';
 import { ToolCallWrapper } from './tool-call-wrapper';
 import { ChartRangeSelector } from './display-chart-range-selector';
 import type { ToolCallComponentProps } from '.';
@@ -11,7 +13,7 @@ import type { CategoricalChartProps } from 'recharts/types/chart/generateCategor
 import type { ChartConfig } from '../ui/chart';
 import type { displayChart } from '@nao/shared/tools';
 import type { DateRange } from '@/lib/charts.utils';
-import { labelize, filterByDateRange, DATE_RANGE_OPTIONS, toKey } from '@/lib/charts.utils';
+import { labelize, filterByDateRange, DATE_RANGE_OPTIONS, toKey, downloadChartAsPng } from '@/lib/charts.utils';
 
 const Colors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
 
@@ -21,6 +23,16 @@ export const DisplayChartToolCall = ({
 	const { messages } = useAgentContext();
 	const config = state !== 'input-streaming' ? input : undefined;
 	const [dataRange, setDataRange] = useState<DateRange>('all');
+	const chartRef = useRef<HTMLDivElement>(null);
+
+	const showRangeSelector = config?.chart_type !== 'pie' && config?.x_axis_type === 'date';
+
+	const handleDownload = () => {
+		if (!chartRef.current) {
+			return;
+		}
+		downloadChartAsPng(chartRef.current, config?.title || 'chart');
+	};
 
 	const sourceData = useMemo(() => {
 		if (!config?.query_id) {
@@ -91,17 +103,20 @@ export const DisplayChartToolCall = ({
 	}
 
 	return (
-		<div className='flex flex-col items-center my-4 gap-2 aspect-3/2'>
+		<div ref={chartRef} className='flex flex-col items-center my-4 gap-2 aspect-3/2'>
 			<span className='text-sm font-medium'>{config.title}</span>
-			{config.chart_type !== 'pie' && config.x_axis_type === 'date' && (
-				<div className='flex w-full justify-end items-center'>
+			<div className='flex w-full justify-end items-center gap-1'>
+				<Button variant='ghost-muted' size='icon-xs' onClick={handleDownload} title='Download as PNG'>
+					<Download className='size-3' />
+				</Button>
+				{showRangeSelector && (
 					<ChartRangeSelector
 						options={DATE_RANGE_OPTIONS}
 						selectedRange={dataRange}
 						onRangeSelected={(range) => setDataRange(range)}
 					/>
-				</div>
-			)}
+				)}
+			</div>
 
 			<ChartDisplay
 				data={filteredData}

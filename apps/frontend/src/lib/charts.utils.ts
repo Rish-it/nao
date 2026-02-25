@@ -86,3 +86,64 @@ export const labelize = (key: any) => {
 export const toKey = (value: string) => {
 	return hashValue(value);
 };
+
+/** Downloads the chart inside the given container as a PNG file */
+export async function downloadChartAsPng(container: HTMLElement, filename: string): Promise<void> {
+	const chartElement = container.querySelector<HTMLElement>('[data-chart]');
+	if (!chartElement) {
+		return;
+	}
+
+	const svg = chartElement.querySelector('svg');
+	if (!svg) {
+		return;
+	}
+
+	const { width, height } = svg.getBoundingClientRect();
+	const clone = svg.cloneNode(true) as SVGSVGElement;
+	clone.setAttribute('width', String(width));
+	clone.setAttribute('height', String(height));
+
+	const svgString = resolveCssVariables(new XMLSerializer().serializeToString(clone), chartElement);
+	const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+	const url = URL.createObjectURL(blob);
+
+	try {
+		await svgToPngDownload(url, width, height, filename);
+	} finally {
+		URL.revokeObjectURL(url);
+	}
+}
+
+function resolveCssVariables(svgString: string, element: HTMLElement): string {
+	const style = getComputedStyle(element);
+	return svgString.replace(/var\(--([^)]+)\)/g, (original, varName) => {
+		return style.getPropertyValue(`--${varName}`).trim() || original;
+	});
+}
+
+function svgToPngDownload(svgUrl: string, width: number, height: number, filename: string): Promise<void> {
+	return new Promise((resolve, reject) => {
+		const img = new Image();
+		img.onload = () => {
+			const scale = 2;
+			const canvas = document.createElement('canvas');
+			canvas.width = width * scale;
+			canvas.height = height * scale;
+
+			const ctx = canvas.getContext('2d')!;
+			ctx.scale(scale, scale);
+			ctx.fillStyle = '#ffffff';
+			ctx.fillRect(0, 0, width, height);
+			ctx.drawImage(img, 0, 0, width, height);
+
+			const link = document.createElement('a');
+			link.download = `${filename}.png`;
+			link.href = canvas.toDataURL('image/png');
+			link.click();
+			resolve();
+		};
+		img.onerror = reject;
+		img.src = svgUrl;
+	});
+}
