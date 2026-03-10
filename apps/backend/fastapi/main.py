@@ -262,7 +262,7 @@ async def execute_sql(request: ExecuteSQLRequest):
 
         # Resolve relative DB paths (e.g. DuckDB) to absolute before executing,
         # so concurrent requests changing cwd via os.chdir() can't cause races.
-        if hasattr(db_config, "path") and db_config.path != ":memory:":
+        if db_config.type == "duckdb" and db_config.path != ":memory:":
             db_path = Path(db_config.path)
             if not db_path.is_absolute():
                 db_config.path = str(project_path / db_path)
