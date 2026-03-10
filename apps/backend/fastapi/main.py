@@ -1,3 +1,4 @@
+import asyncio
 import math
 import os
 import sys
@@ -220,9 +221,7 @@ async def refresh_context():
 @app.post("/execute_sql", response_model=ExecuteSQLResponse)
 async def execute_sql(request: ExecuteSQLRequest):
     try:
-        # Load the nao config from the project folder
-        project_path = Path(request.nao_project_folder)
-        os.chdir(project_path)
+        project_path = Path(request.nao_project_folder).resolve()
         config = NaoConfig.try_load(project_path, raise_on_error=True)
         assert config is not None
 
@@ -261,7 +260,15 @@ async def execute_sql(request: ExecuteSQLRequest):
                 },
             )
 
-        df = db_config.execute_sql(request.sql)
+        # Resolve relative DB paths (e.g. DuckDB) to absolute before executing,
+        # so concurrent requests changing cwd via os.chdir() can't cause races.
+        if hasattr(db_config, "path") and db_config.path != ":memory:":
+            db_path = Path(db_config.path)
+            if not db_path.is_absolute():
+                db_config.path = str(project_path / db_path)
+
+        # Run blocking DB call in a thread to avoid stalling the event loop
+        df = await asyncio.to_thread(db_config.execute_sql, request.sql)
 
         data = [
             {k: _convert_value(v) for k, v in row.items()}
@@ -272,7 +279,7 @@ async def execute_sql(request: ExecuteSQLRequest):
             data=data,
             row_count=len(data),
             columns=[str(c) for c in df.columns.tolist()],
-            dialect=db_config.type, 
+            dialect=db_config.type,
         )
     except HTTPException:
         raise
