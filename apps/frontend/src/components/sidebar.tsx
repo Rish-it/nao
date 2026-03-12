@@ -6,6 +6,7 @@ import { SidebarUserMenu } from './sidebar-user-menu';
 import { SidebarSettingsNav } from './sidebar-settings-nav';
 
 import StoryIcon from './ui/story-icon';
+import { SidebarCommunity } from './sidebar-community';
 import type { LucideIcon } from 'lucide-react';
 import type { ChatListItem as ChatListItemType } from '@nao/backend/chat';
 import { Button } from '@/components/ui/button';
@@ -14,8 +15,6 @@ import { useChatListQuery } from '@/queries/use-chat-list-query';
 import { useSidebar } from '@/contexts/sidebar';
 import { useCommandMenuCallback } from '@/contexts/command-menu-callback';
 import NaoLogoGreyscale from '@/components/icons/nao-logo-greyscale.svg';
-import GithubIcon from '@/components/icons/github-icon.svg';
-import SlackIcon from '@/components/icons/slack.svg';
 
 export function Sidebar() {
 	const chats = useChatListQuery();
@@ -166,46 +165,7 @@ export function Sidebar() {
 			)}
 
 			<div className={cn('mt-auto transition-[padding] duration-300', effectiveIsCollapsed ? 'p-1' : 'p-2')}>
-				<nav className='flex flex-col gap-1 mb-1'>
-					<a
-						href='https://github.com/getnao/nao'
-						target='_blank'
-						rel='noopener noreferrer'
-						className={cn(
-							'flex items-center py-2 text-sm rounded-md transition-colors whitespace-nowrap text-muted-foreground/60 hover:bg-sidebar-accent hover:text-muted-foreground',
-							effectiveIsCollapsed ? 'justify-center p-1.5' : 'gap-2 pl-5 pr-3',
-						)}
-					>
-						<GithubIcon className='size-4 shrink-0 opacity-50 grayscale brightness-0 dark:brightness-200' />
-						<span
-							className={cn(
-								'transition-[opacity,visibility,width] duration-300 overflow-hidden',
-								effectiveIsCollapsed ? 'opacity-0 invisible w-0' : 'opacity-100 visible',
-							)}
-						>
-							GitHub
-						</span>
-					</a>
-					<a
-						href='https://join.slack.com/t/naolabs/shared_invite/zt-3cgdql4up-Az9FxGkTb8Qr34z2Dxp9TQ'
-						target='_blank'
-						rel='noopener noreferrer'
-						className={cn(
-							'flex items-center py-2 text-sm rounded-md transition-colors whitespace-nowrap text-muted-foreground/60 hover:bg-sidebar-accent hover:text-muted-foreground',
-							effectiveIsCollapsed ? 'justify-center p-1.5' : 'gap-2 pl-5 pr-3',
-						)}
-					>
-						<SlackIcon className='size-4 shrink-0 opacity-50 grayscale brightness-0 dark:brightness-200' />
-						<span
-							className={cn(
-								'transition-[opacity,visibility,width] duration-300 overflow-hidden',
-								effectiveIsCollapsed ? 'opacity-0 invisible w-0' : 'opacity-100 visible',
-							)}
-						>
-							Slack
-						</span>
-					</a>
-				</nav>
+				{isInSettings && <SidebarCommunity isCollapsed={effectiveIsCollapsed} />}
 				<SidebarUserMenu isCollapsed={effectiveIsCollapsed} />
 			</div>
 		</div>
