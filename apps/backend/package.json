@@ -9,7 +9,8 @@
 		"./memory": "./src/types/memory.ts",
 		"./saved-prompts": "./src/types/saved-prompt.ts",
 		"./tools": "./src/agents/tools/index.ts",
-		"./providers": "./src/agents/providers.ts"
+		"./providers": "./src/agents/providers.ts",
+		"./log": "./src/types/log.ts"
 	},
 	"scripts": {
 		"dev": "bun --watch src/index.ts",
