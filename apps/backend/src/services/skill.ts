@@ -44,13 +44,13 @@ class SkillService {
 	public loadSkills(): void {
 		try {
 			if (!existsSync(this._skillsFolderPath)) {
-				logger.warn(`Skills folder not found: ${this._skillsFolderPath}`, { source: 'system' });
+				logger.warn(`Skills folder not found: ${this._skillsFolderPath}`, { source: 'agent' });
 				this._skills = [];
 				return;
 			}
 
 			if (!statSync(this._skillsFolderPath).isDirectory()) {
-				logger.error(`Skills path is not a directory: ${this._skillsFolderPath}`, { source: 'system' });
+				logger.error(`Skills path is not a directory: ${this._skillsFolderPath}`, { source: 'agent' });
 				this._skills = [];
 				return;
 			}
@@ -58,7 +58,7 @@ class SkillService {
 			const files = readdirSync(this._skillsFolderPath).filter((f) => f.endsWith('.md'));
 			this._readSkills(files);
 		} catch (error) {
-			logger.error(`Failed to load skills: ${String(error)}`, { source: 'system' });
+			logger.error(`Failed to load skills: ${String(error)}`, { source: 'agent' });
 			this._skills = [];
 		}
 	}
@@ -76,7 +76,7 @@ class SkillService {
 		try {
 			return readFileSync(join(this._projectPath, skill.location), 'utf8');
 		} catch (error) {
-			logger.error(`Failed to read skill content for ${skillName}: ${String(error)}`, { source: 'system' });
+			logger.error(`Failed to read skill content for ${skillName}: ${String(error)}`, { source: 'agent' });
 			return null;
 		}
 	}
@@ -108,7 +108,7 @@ class SkillService {
 				}
 			});
 		} catch (error) {
-			logger.error(`Skills file watcher setup failed: ${String(error)}`, { source: 'system' });
+			logger.error(`Skills file watcher setup failed: ${String(error)}`, { source: 'agent' });
 		}
 	}
 }

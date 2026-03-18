@@ -9,6 +9,6 @@ export type LogSource = (typeof LOG_SOURCES)[number];
 export const logFilterSchema = z.object({
 	level: z.enum(LOG_LEVELS).optional(),
 	source: z.enum(LOG_SOURCES).optional(),
-	limit: z.number().min(1).max(500).default(100),
+	limit: z.number().int().min(1).max(500).default(100),
 });
 export type LogFilter = z.infer<typeof logFilterSchema>;

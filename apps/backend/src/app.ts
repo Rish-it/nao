@@ -105,9 +105,8 @@ app.register(fastifyTRPCPlugin, {
 		router: trpcRouter,
 		createContext,
 		onError({ path, error }) {
-			console.error(`Error in tRPC handler on path '${path}':\n`, error);
 			logger.error(`tRPC error on ${path}: ${error.message}`, {
-				source: 'system',
+				source: 'http',
 				context: { path, code: error.code },
 			});
 		},

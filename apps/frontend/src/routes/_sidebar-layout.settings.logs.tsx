@@ -73,7 +73,7 @@ function LogsPage() {
 		setTimeout(() => setShowRefresh(false), MIN_REFRESH_MS);
 	}, [logs]);
 
-	const handleCopy = useCallback(() => {
+	const handleCopy = useCallback(async () => {
 		if (!sortedEntries.length) {
 			return;
 		}
@@ -91,9 +91,13 @@ function LogsPage() {
 			})
 			.join('\n');
 
-		navigator.clipboard.writeText(text);
-		setCopied(true);
-		setTimeout(() => setCopied(false), 1500);
+		try {
+			await navigator.clipboard.writeText(text);
+			setCopied(true);
+			setTimeout(() => setCopied(false), 1500);
+		} catch {
+			// Clipboard write can fail on non-secure origins or denied permissions
+		}
 	}, [sortedEntries]);
 
 	const formatTimestamp = (ts: string | Date) => {
@@ -170,6 +174,14 @@ function LogsPage() {
 				{logs.isLoading ? (
 					<div className='flex items-center justify-center h-[280px]'>
 						<TextShimmer text='Loading logs...' />
+					</div>
+				) : logs.isError ? (
+					<div className='flex flex-col items-center justify-center h-[280px] gap-2 text-muted-foreground'>
+						<Terminal className='size-8 opacity-30' />
+						<span className='text-sm'>Failed to load logs.</span>
+						<Button variant='outline' size='sm' onClick={handleRefresh}>
+							Retry
+						</Button>
 					</div>
 				) : !sortedEntries.length ? (
 					<div className='flex flex-col items-center justify-center h-[280px] gap-2 text-muted-foreground'>

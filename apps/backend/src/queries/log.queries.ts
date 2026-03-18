@@ -29,10 +29,11 @@ export const getLogs = async (projectId: string, filter: LogFilter) => {
 };
 
 export const deleteOldLogs = async (retentionDays: number): Promise<void> => {
+	const retentionMs = retentionDays * 24 * 60 * 60 * 1000;
 	const cutoff =
 		dbConfig.dialect === Dialect.Postgres
-			? sql`now() - interval '${sql.raw(String(retentionDays))} days'`
-			: sql`(cast(unixepoch('subsecond') * 1000 as integer)) - ${retentionDays * 24 * 60 * 60 * 1000}`;
+			? sql`now() - make_interval(secs => ${retentionMs / 1000})`
+			: sql`(cast(unixepoch('subsecond') * 1000 as integer)) - ${retentionMs}`;
 
 	await db.delete(s.log).where(lt(s.log.createdAt, cutoff)).execute();
 };

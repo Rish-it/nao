@@ -3,7 +3,7 @@ import * as logQueries from '../queries/log.queries';
 const RETENTION_DAYS = 7;
 const CLEANUP_INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
-export const startLogCleanup = (): void => {
+export const startLogCleanup = (): ReturnType<typeof setInterval> => {
 	const runCleanup = async () => {
 		try {
 			await logQueries.deleteOldLogs(RETENTION_DAYS);
@@ -14,5 +14,5 @@ export const startLogCleanup = (): void => {
 
 	// Run once on startup, then every 24 hours
 	runCleanup();
-	setInterval(runCleanup, CLEANUP_INTERVAL_MS);
+	return setInterval(runCleanup, CLEANUP_INTERVAL_MS);
 };
