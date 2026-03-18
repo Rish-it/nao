@@ -29,6 +29,7 @@ export interface BuildChartProps {
 	colorFor?: (key: string, index: number) => string;
 	labelFormatter?: (value: string) => string;
 	showGrid?: boolean;
+	xAxisInterval?: number;
 	children?: React.ReactNode[];
 	margin?: { top?: number; right?: number; bottom?: number; left?: number };
 	title?: string;
@@ -71,7 +72,7 @@ function buildResolved(props: BuildChartProps) {
 					fontSize={14}
 					fontWeight='600'
 					fontFamily='system-ui, sans-serif'
-					fill='#111827'
+					fill='currentColor'
 				>
 					{props.title}
 				</text>
@@ -79,17 +80,39 @@ function buildResolved(props: BuildChartProps) {
 		/>
 	) : null;
 
+	let margin = props.margin;
+	if (props.title) {
+		margin = { ...margin, top: (margin?.top ?? 0) + 30 };
+	}
+	if (shouldRotateLabels(props.data, props.xAxisType)) {
+		margin = { ...margin, bottom: (margin?.bottom ?? 0) + 50 };
+	}
+
 	const resolved: ResolvedProps = {
 		...props,
 		colorFor,
 		labelFormatter,
-		margin: props.title ? { ...props.margin, top: (props.margin?.top ?? 0) + 30 } : props.margin,
+		margin,
 		children: titleChild ? [titleChild, ...(props.children ?? [])] : props.children,
 	};
 	return resolved;
 }
 
 type ResolvedProps = BuildChartProps & Required<Pick<BuildChartProps, 'colorFor' | 'labelFormatter'>>;
+
+const ROTATE_THRESHOLD = 8;
+const MAX_LABEL_LENGTH = 10;
+
+export function shouldRotateLabels(data: Record<string, unknown>[], xAxisType?: string): boolean {
+	return xAxisType !== 'number' && data.length > ROTATE_THRESHOLD;
+}
+
+function truncateLabel(value: string, maxLength: number): string {
+	if (value.length > maxLength) {
+		return value.slice(0, maxLength - 1) + '\u2026';
+	}
+	return value;
+}
 
 function buildKpiCard(props: ResolvedProps) {
 	const { data, series } = props;
@@ -135,9 +158,21 @@ function KpiCard({ value, displayName }: { value: unknown; displayName: string }
 }
 
 function buildBarChart(props: ResolvedProps) {
-	const { data, chartType, xAxisKey, xAxisType, series, colorFor, labelFormatter, showGrid, children, margin } =
-		props;
+	const {
+		data,
+		chartType,
+		xAxisKey,
+		xAxisType,
+		xAxisInterval,
+		series,
+		colorFor,
+		labelFormatter,
+		showGrid,
+		children,
+		margin,
+	} = props;
 	const isStacked = chartType === 'stacked_bar';
+	const rotate = shouldRotateLabels(data, xAxisType);
 
 	return (
 		<BarChart data={data} accessibilityLayer margin={margin}>
@@ -148,10 +183,18 @@ function buildBarChart(props: ResolvedProps) {
 				type={xAxisType}
 				domain={['dataMin', 'dataMax']}
 				tickLine={true}
-				tickMargin={10}
+				tickMargin={rotate ? 5 : 10}
 				axisLine={false}
-				minTickGap={12}
-				tickFormatter={labelFormatter}
+				interval={rotate ? (xAxisInterval ?? 0) : undefined}
+				minTickGap={rotate ? 0 : 12}
+				angle={rotate ? -45 : 0}
+				textAnchor={rotate ? 'end' : 'middle'}
+				height={rotate ? 80 : undefined}
+				tickFormatter={(value: string) => {
+					const formatted = labelFormatter(value);
+					return rotate ? truncateLabel(formatted, MAX_LABEL_LENGTH) : formatted;
+				}}
+				fontSize={rotate ? 11 : undefined}
 			/>
 			{children}
 			{series.map((s, i) => (
@@ -169,7 +212,10 @@ function buildBarChart(props: ResolvedProps) {
 }
 
 function buildAreaChart(props: ResolvedProps) {
-	const { data, xAxisKey, xAxisType, series, colorFor, labelFormatter, showGrid, children, margin } = props;
+	const { data, xAxisKey, xAxisType, xAxisInterval, series, colorFor, labelFormatter, showGrid, children, margin } =
+		props;
+	const rotate = shouldRotateLabels(data, xAxisType);
+
 	return (
 		<AreaChart data={data} accessibilityLayer margin={margin}>
 			<defs>
@@ -191,10 +237,18 @@ function buildAreaChart(props: ResolvedProps) {
 				type={xAxisType}
 				domain={['dataMin', 'dataMax']}
 				tickLine
-				tickMargin={10}
+				tickMargin={rotate ? 5 : 10}
 				axisLine={false}
-				minTickGap={12}
-				tickFormatter={labelFormatter}
+				interval={rotate ? (xAxisInterval ?? 0) : undefined}
+				minTickGap={rotate ? 0 : 12}
+				angle={rotate ? -45 : 0}
+				textAnchor={rotate ? 'end' : 'middle'}
+				height={rotate ? 80 : undefined}
+				tickFormatter={(value: string) => {
+					const formatted = labelFormatter(value);
+					return rotate ? truncateLabel(formatted, MAX_LABEL_LENGTH) : formatted;
+				}}
+				fontSize={rotate ? 11 : undefined}
 			/>
 			{children}
 			{series.map((s, i) => (

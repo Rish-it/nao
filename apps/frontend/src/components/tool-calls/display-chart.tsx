@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import { buildChart, labelize } from '@nao/shared';
 import { Download, FilePlus } from 'lucide-react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLe
 import { TextShimmer } from '../ui/text-shimmer';
 import { Skeleton } from '../ui/skeleton';
 import { Button } from '../ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
 import { ToolCallWrapper } from './tool-call-wrapper';
 import { ChartRangeSelector } from './display-chart-range-selector';
 import type { ToolCallComponentProps } from '.';
@@ -23,6 +24,7 @@ import { trpc } from '@/main';
 
 const Colors = ['var(--chart-1)', 'var(--chart-2)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)'];
 const EMPTY_MESSAGES: UIMessage[] = [];
+const INTERVAL_PAGE_SIZE = 20;
 
 const escapeDoubleQuotedAttr = (value: string) => value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
 const escapeSingleQuotedAttr = (value: string) => value.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
@@ -37,6 +39,7 @@ export const DisplayChartToolCall = ({
 	const { open: openSidePanel, currentStoryId, isVisible } = useSidePanel();
 	const config = state !== 'input-streaming' ? input : undefined;
 	const [dataRange, setDataRange] = useState<DateRange>('all');
+	const [selectedInterval, setSelectedInterval] = useState('0');
 	const storyIds = useMemo(() => findStoryIds(messages), [messages]);
 
 	const addToStoryMutation = useMutation(
@@ -97,6 +100,35 @@ export const DisplayChartToolCall = ({
 		}
 		return filterByDateRange(sourceData.data, config.x_axis_key, dataRange);
 	}, [sourceData?.data, config, dataRange]);
+
+	const intervals = useMemo(() => {
+		const total = filteredData.length;
+		if (total <= INTERVAL_PAGE_SIZE) {
+			return null;
+		}
+		// Choose page size to create even divisions with no tiny remainders
+		const pageCount = Math.ceil(total / INTERVAL_PAGE_SIZE);
+		const pageSize = Math.ceil(total / pageCount);
+		const pages: { value: string; label: string; end: number }[] = [];
+		for (let i = 0; i < total; i += pageSize) {
+			const end = Math.min(i + pageSize, total);
+			pages.push({ value: String(i), label: `${i + 1} – ${end}`, end });
+		}
+		return pages;
+	}, [filteredData.length]);
+
+	useEffect(() => {
+		setSelectedInterval('0');
+	}, [filteredData.length]);
+
+	const displayData = useMemo(() => {
+		if (!intervals) {
+			return filteredData;
+		}
+		const page = intervals.find((i) => i.value === selectedInterval) ?? intervals[0];
+		const start = Number(page.value);
+		return filteredData.slice(start, page.end);
+	}, [filteredData, intervals, selectedInterval]);
 
 	if (output && output.error) {
 		return (
@@ -198,6 +230,22 @@ export const DisplayChartToolCall = ({
 							onRangeSelected={(range) => setDataRange(range)}
 						/>
 					)}
+					{intervals && config.chart_type !== 'pie' && config.chart_type !== 'kpi_card' && (
+						<Select value={selectedInterval} onValueChange={setSelectedInterval}>
+							<SelectTrigger className='border-none'>
+								<SelectValue>
+									{intervals.find((i) => i.value === selectedInterval)?.label ?? intervals[0].label}
+								</SelectValue>
+							</SelectTrigger>
+							<SelectContent align='center' position='item-aligned'>
+								{intervals.map((opt) => (
+									<SelectItem key={opt.value} value={opt.value}>
+										{opt.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+					)}
 					{config.chart_type != 'kpi_card' && (
 						<Button
 							variant='ghost-muted'
@@ -213,7 +261,7 @@ export const DisplayChartToolCall = ({
 			</div>
 
 			<ChartDisplay
-				data={filteredData}
+				data={displayData}
 				chartType={config.chart_type}
 				xAxisKey={config.x_axis_key}
 				series={config.series}
