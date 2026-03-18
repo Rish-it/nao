@@ -84,7 +84,11 @@ function buildResolved(props: BuildChartProps) {
 	if (props.title) {
 		margin = { ...margin, top: (margin?.top ?? 0) + 30 };
 	}
-	if (shouldRotateLabels(props.data, props.xAxisType)) {
+	if (
+		props.chartType !== 'pie' &&
+		props.chartType !== 'kpi_card' &&
+		shouldRotateLabels(props.data, props.xAxisType)
+	) {
 		margin = { ...margin, bottom: (margin?.bottom ?? 0) + 50 };
 	}
 

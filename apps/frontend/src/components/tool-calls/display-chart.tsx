@@ -101,7 +101,11 @@ export const DisplayChartToolCall = ({
 		return filterByDateRange(sourceData.data, config.x_axis_key, dataRange);
 	}, [sourceData?.data, config, dataRange]);
 
+	const isPaginable = config?.chart_type !== 'pie' && config?.chart_type !== 'kpi_card';
 	const intervals = useMemo(() => {
+		if (!isPaginable) {
+			return null;
+		}
 		const total = filteredData.length;
 		if (total <= INTERVAL_PAGE_SIZE) {
 			return null;
@@ -115,7 +119,7 @@ export const DisplayChartToolCall = ({
 			pages.push({ value: String(i), label: `${i + 1} – ${end}`, end });
 		}
 		return pages;
-	}, [filteredData.length]);
+	}, [filteredData.length, isPaginable]);
 
 	useEffect(() => {
 		setSelectedInterval('0');
