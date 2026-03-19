@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version < '3.11'",
@@ -1570,6 +1570,14 @@ mssql = [
     { name = "pyodbc" },
     { name = "rich" },
 ]
+mysql = [
+    { name = "mysqlclient" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "pyarrow" },
+    { name = "pyarrow-hotfix" },
+    { name = "rich" },
+]
 postgres = [
     { name = "numpy" },
     { name = "pandas" },
@@ -2173,6 +2181,20 @@ wheels = [
 ]
 
 [[package]]
+name = "mysqlclient"
+version = "2.2.8"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/eb/b0/9df076488cb2e536d40ce6dbd4273c1f20a386e31ffe6e7cb613902b3c2a/mysqlclient-2.2.8.tar.gz", hash = "sha256:8ed20c5615a915da451bb308c7d0306648a4fd9a2809ba95c992690006306199", size = 92287, upload-time = "2026-02-10T10:58:37.405Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/60/d0/22b896a2f8f797ee3517a0c1c1fe576cd38768cd25e2a7362a7277725ed4/mysqlclient-2.2.8-cp310-cp310-win_amd64.whl", hash = "sha256:86db31bba7b3480fec2751350e9790e24f016f89af33a87bab7e79f7196474e8", size = 206873, upload-time = "2026-02-10T10:58:40.996Z" },
+    { url = "https://files.pythonhosted.org/packages/44/f6/6253d116c024aeb11fb193ad14e2bae2bd3380690e885028abf798b1b0b4/mysqlclient-2.2.8-cp311-cp311-win_amd64.whl", hash = "sha256:60c9ed339dc09e3d5380cc2a9f42e86754fee25a661ced77a02df77990664c92", size = 206875, upload-time = "2026-02-10T10:58:42.223Z" },
+    { url = "https://files.pythonhosted.org/packages/db/1f/7d6b3fbfc8a317805fdb8bbfbc23af99f2090497090e82513daf491a29ce/mysqlclient-2.2.8-cp312-cp312-win_amd64.whl", hash = "sha256:000c7ec3d11e7c411db832e4cfcd7f05db47464326381f5d5ae991b4bb572f93", size = 207171, upload-time = "2026-02-10T10:58:39.827Z" },
+    { url = "https://files.pythonhosted.org/packages/e6/d5/76e369b0fdccd2eb9ed7d890e4e3e23aa1344fea62f0180d7f1574285e54/mysqlclient-2.2.8-cp313-cp313-win_amd64.whl", hash = "sha256:a81f5e12f8d05439709cb02fba97f9f76d1a6c528164f2260d8798fec969e300", size = 207158, upload-time = "2026-02-10T10:58:38.663Z" },
+    { url = "https://files.pythonhosted.org/packages/42/44/6ae21b4e8490eb5167d04fa7452c462ffd72a502b96bf531477ef044a380/mysqlclient-2.2.8-cp314-cp314-win_amd64.whl", hash = "sha256:9bed7c8d3b629bdc09e17fb628d5b3b0a5fd1f12b09432b464b9126c727bedc0", size = 211644, upload-time = "2026-02-10T10:58:45.022Z" },
+    { url = "https://files.pythonhosted.org/packages/66/e5/037d55623be9f681236e04abe12e1290847c06bd48270c3f19ac33493cbf/mysqlclient-2.2.8-cp314-cp314t-win_amd64.whl", hash = "sha256:260cce0e81446c83bf0a389e0fae38d68547d9f8fc0833bc733014e10ce28a99", size = 213067, upload-time = "2026-02-10T10:58:43.389Z" },
+]
+
+[[package]]
 name = "nao-core"
 version = "0.0.36"
 source = { editable = "." }
@@ -2185,7 +2207,7 @@ dependencies = [
     { name = "dotenv" },
     { name = "fastapi" },
     { name = "google-genai" },
-    { name = "ibis-framework", extra = ["athena", "bigquery", "clickhouse", "databricks", "duckdb", "mssql", "postgres", "snowflake", "trino"] },
+    { name = "ibis-framework", extra = ["athena", "bigquery", "clickhouse", "databricks", "duckdb", "mssql", "mysql", "postgres", "snowflake", "trino"] },
     { name = "jinja2" },
     { name = "mistralai" },
     { name = "notion-client" },
@@ -2194,6 +2216,7 @@ dependencies = [
     { name = "openai" },
     { name = "posthog" },
     { name = "pydantic" },
+    { name = "pyngrok" },
     { name = "pytest" },
     { name = "python-dotenv" },
     { name = "pyyaml" },
@@ -2226,7 +2249,7 @@ requires-dist = [
     { name = "dotenv", specifier = ">=0.9.9" },
     { name = "fastapi", specifier = ">=0.128.0" },
     { name = "google-genai", specifier = ">=1.61.0" },
-    { name = "ibis-framework", extras = ["bigquery", "clickhouse", "duckdb", "databricks", "mssql", "snowflake", "postgres", "athena", "trino"], specifier = ">=9.0.0" },
+    { name = "ibis-framework", extras = ["bigquery", "clickhouse", "duckdb", "databricks", "mssql", "mysql", "snowflake", "postgres", "athena", "trino"], specifier = ">=9.0.0" },
     { name = "jinja2", specifier = ">=3.1.0" },
     { name = "mistralai", specifier = ">=1.11.1" },
     { name = "notion-client", specifier = ">=2.7.0" },
@@ -2235,6 +2258,7 @@ requires-dist = [
     { name = "openai", specifier = ">=1.0.0" },
     { name = "posthog", specifier = ">=7.8.0" },
     { name = "pydantic", specifier = ">=2.10.0" },
+    { name = "pyngrok", specifier = ">=7.0.0" },
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "pytest-cov", marker = "extra == 'dev'" },
     { name = "pytest-timeout", marker = "extra == 'dev'", specifier = ">=2.3.0" },
@@ -3235,6 +3259,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/48/47/e761c254f410c023a469284a9bc210933e18588ca87706ae93002c05114c/pynacl-1.6.2-cp38-abi3-win32.whl", hash = "sha256:5811c72b473b2f38f7e2a3dc4f8642e3a3e9b5e7317266e4ced1fba85cae41aa", size = 227421, upload-time = "2026-01-01T17:32:33.076Z" },
     { url = "https://files.pythonhosted.org/packages/41/ad/334600e8cacc7d86587fe5f565480fde569dfb487389c8e1be56ac21d8ac/pynacl-1.6.2-cp38-abi3-win_amd64.whl", hash = "sha256:62985f233210dee6548c223301b6c25440852e13d59a8b81490203c3227c5ba0", size = 239754, upload-time = "2026-01-01T17:32:34.557Z" },
     { url = "https://files.pythonhosted.org/packages/29/7d/5945b5af29534641820d3bd7b00962abbbdfee84ec7e19f0d5b3175f9a31/pynacl-1.6.2-cp38-abi3-win_arm64.whl", hash = "sha256:834a43af110f743a754448463e8fd61259cd4ab5bbedcf70f9dabad1d28a394c", size = 184801, upload-time = "2026-01-01T17:32:36.309Z" },
+]
+
+[[package]]
+name = "pyngrok"
+version = "7.5.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pyyaml" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/9e/8b/a254d57f6d5ec8797daa57510abd8e82eb7f7992fc1c455677f28e805893/pyngrok-7.5.1.tar.gz", hash = "sha256:934ec8a899ace8ec61c39120a27a8212aeb40293cad2f4ffc8a3d1a4bb6a8d6c", size = 43307, upload-time = "2026-03-06T18:03:44.774Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e0/c3/c73d882109bb19804383c375b42bbbdcbf3838fc3305217d9ba1bb051cfa/pyngrok-7.5.1-py3-none-any.whl", hash = "sha256:88f1ffb0ccc8dbc7810a29136eb9db3abb46b62436da438e277dfc1e70cf76ae", size = 24801, upload-time = "2026-03-06T18:03:43.746Z" },
 ]
 
 [[package]]
