@@ -10,7 +10,7 @@
 		"./saved-prompts": "./src/types/saved-prompt.ts",
 		"./tools": "./src/agents/tools/index.ts",
 		"./providers": "./src/agents/providers.ts",
-		"./log": "./src/types/log.ts"
+		"./log": "./src/types/log.ts",
 		"./provider-meta": "./src/agents/provider-meta.ts"
 	},
 	"scripts": {
