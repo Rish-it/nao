@@ -32,11 +32,7 @@ const pgFormats = {
 export const getMessagesUsage = async (projectId: string, filter: UsageFilter): Promise<UsageRecord[]> => {
 	const { granularity, provider } = filter;
 	const dateExpr = getDateExpr(s.chatMessage.createdAt, granularity);
-	const lookbackTs = getLookbackTimestamp(granularity);
-	const lookbackFilter =
-		dbConfig.dialect === Dialect.Postgres
-			? sql`${s.chatMessage.createdAt} >= ${new Date(lookbackTs).toISOString()}`
-			: sql`${s.chatMessage.createdAt} >= ${lookbackTs}`;
+	const lookbackFilter = getLookbackFilter(s.chatMessage.createdAt, granularity);
 
 	const whereConditions = [eq(s.chat.projectId, projectId), lookbackFilter];
 	if (provider) {
@@ -72,31 +68,45 @@ export const getMessagesUsage = async (projectId: string, filter: UsageFilter): 
 		.where(and(...whereConditions))
 		.groupBy(dateExpr);
 
-	return fillMissingDates(
-		rows.map((row) => ({
-			date: row.date,
-			messageCount: row.messageCount,
-			webMessageCount: row.webMessageCount,
-			slackMessageCount: row.slackMessageCount,
-			teamsMessageCount: row.teamsMessageCount,
-			telegramMessageCount: row.telegramMessageCount,
-			inputNoCacheTokens: Number(row.inputNoCacheTokens ?? 0),
-			inputCacheReadTokens: Number(row.inputCacheReadTokens ?? 0),
-			inputCacheWriteTokens: Number(row.inputCacheWriteTokens ?? 0),
-			outputTotalTokens: Number(row.outputTotalTokens ?? 0),
-			totalTokens: Number(row.totalTokens ?? 0),
-			inputNoCacheCost: Number(row.inputNoCacheCost ?? 0),
-			inputCacheReadCost: Number(row.inputCacheReadCost ?? 0),
-			inputCacheWriteCost: Number(row.inputCacheWriteCost ?? 0),
-			outputCost: Number(row.outputCost ?? 0),
+	const actionCostsByDate = await getActionCostsByDate(projectId, filter);
+
+	const messagesByDate = new Map(rows.map((row) => [row.date, row]));
+	const allDates = new Set([...messagesByDate.keys(), ...actionCostsByDate.keys()]);
+
+	const merged = [...allDates].map((date) => {
+		const row = messagesByDate.get(date);
+		const actionCosts = actionCostsByDate.get(date) ?? {
+			chatCost: 0,
+			testCost: 0,
+			memoryCost: 0,
+			voiceCost: 0,
+		};
+		return {
+			...actionCosts,
+			date,
+			messageCount: row?.messageCount ?? 0,
+			webMessageCount: row?.webMessageCount ?? 0,
+			slackMessageCount: row?.slackMessageCount ?? 0,
+			teamsMessageCount: row?.teamsMessageCount ?? 0,
+			telegramMessageCount: row?.telegramMessageCount ?? 0,
+			inputNoCacheTokens: Number(row?.inputNoCacheTokens ?? 0),
+			inputCacheReadTokens: Number(row?.inputCacheReadTokens ?? 0),
+			inputCacheWriteTokens: Number(row?.inputCacheWriteTokens ?? 0),
+			outputTotalTokens: Number(row?.outputTotalTokens ?? 0),
+			totalTokens: Number(row?.totalTokens ?? 0),
+			inputNoCacheCost: Number(row?.inputNoCacheCost ?? 0),
+			inputCacheReadCost: Number(row?.inputCacheReadCost ?? 0),
+			inputCacheWriteCost: Number(row?.inputCacheWriteCost ?? 0),
+			outputCost: Number(row?.outputCost ?? 0),
 			totalCost:
-				Number(row.inputNoCacheCost ?? 0) +
-				Number(row.inputCacheReadCost ?? 0) +
-				Number(row.inputCacheWriteCost ?? 0) +
-				Number(row.outputCost ?? 0),
-		})),
-		granularity,
-	);
+				Number(row?.inputNoCacheCost ?? 0) +
+				Number(row?.inputCacheReadCost ?? 0) +
+				Number(row?.inputCacheWriteCost ?? 0) +
+				Number(row?.outputCost ?? 0),
+		};
+	});
+
+	return fillMissingDates(merged, granularity);
 };
 
 export const getUsedProviders = async (projectId: string): Promise<LlmProvider[]> => {
@@ -118,6 +128,64 @@ function getDateExpr(field: SQLWrapper, granularity: Granularity): SQL<string> {
 		const format = sql.raw(`'${sqliteFormats[granularity]}'`);
 		return sql<string>`strftime(${format}, ${field} / 1000, 'unixepoch')`;
 	}
+}
+
+function getLookbackFilter(field: SQLWrapper, granularity: Granularity): SQL {
+	const lookbackTs = getLookbackTimestamp(granularity);
+	return dbConfig.dialect === Dialect.Postgres
+		? sql`${field} >= ${new Date(lookbackTs).toISOString()}`
+		: sql`${field} >= ${lookbackTs}`;
+}
+
+async function getActionCostsByDate(
+	projectId: string,
+	filter: UsageFilter,
+): Promise<Map<string, Pick<UsageRecord, 'chatCost' | 'testCost' | 'memoryCost' | 'voiceCost'>>> {
+	const { granularity, provider } = filter;
+	const dateExpr = getDateExpr(s.llmInference.createdAt, granularity);
+	const lookbackFilter = getLookbackFilter(s.llmInference.createdAt, granularity);
+	const whereConditions = [eq(s.llmInference.projectId, projectId), lookbackFilter];
+	if (provider) {
+		whereConditions.push(eq(s.llmInference.llmProvider, provider));
+	}
+
+	const costLookup = buildCostValuesTable();
+	const rowCostExpr = sql<number>`
+		(
+			coalesce(${s.llmInference.inputNoCacheTokens}, 0) * coalesce(cost_lookup.input_no_cache, 0)
+			+ coalesce(${s.llmInference.inputCacheReadTokens}, 0) * coalesce(cost_lookup.input_cache_read, 0)
+			+ coalesce(${s.llmInference.inputCacheWriteTokens}, 0) * coalesce(cost_lookup.input_cache_write, 0)
+			+ coalesce(${s.llmInference.outputTotalTokens}, 0) * coalesce(cost_lookup.output, 0)
+		) / 1000000.0
+	`;
+
+	const rows = await db
+		.select({
+			date: dateExpr,
+			chatCost: sql<number>`sum(case when ${s.llmInference.type} in ('chat', 'compaction', 'title_generation') then ${rowCostExpr} else 0 end)`,
+			testCost: sql<number>`sum(case when ${s.llmInference.type} = 'test' then ${rowCostExpr} else 0 end)`,
+			memoryCost: sql<number>`sum(case when ${s.llmInference.type} = 'memory_extraction' then ${rowCostExpr} else 0 end)`,
+			voiceCost: sql<number>`sum(case when ${s.llmInference.type} = 'voice' then coalesce(${s.llmInference.estimatedCost}, 0) else 0 end)`,
+		})
+		.from(s.llmInference)
+		.leftJoin(
+			costLookup,
+			sql`cost_lookup.provider = ${s.llmInference.llmProvider} AND cost_lookup.model_id = ${s.llmInference.llmModelId}`,
+		)
+		.where(and(...whereConditions))
+		.groupBy(dateExpr);
+
+	return new Map(
+		rows.map((row) => [
+			row.date,
+			{
+				chatCost: Number(row.chatCost ?? 0),
+				testCost: Number(row.testCost ?? 0),
+				memoryCost: Number(row.memoryCost ?? 0),
+				voiceCost: Number(row.voiceCost ?? 0),
+			},
+		]),
+	);
 }
 
 /** Build a SQL VALUES table with cost-per-million for each (provider, modelId) */

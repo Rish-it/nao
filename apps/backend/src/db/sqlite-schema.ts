@@ -1,7 +1,7 @@
 import { USER_ROLES } from '@nao/shared/types';
 import { type ProviderMetadata } from 'ai';
 import { sql } from 'drizzle-orm';
-import { check, index, integer, primaryKey, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
+import { check, index, integer, primaryKey, real, sqliteTable, text, unique } from 'drizzle-orm/sqlite-core';
 
 import { AgentSettings } from '../types/agent-settings';
 import { StopReason, ToolState, UIMessagePartType } from '../types/chat';
@@ -533,6 +533,8 @@ export const llmInference = sqliteTable(
 		outputTextTokens: integer('output_text_tokens'),
 		outputReasoningTokens: integer('output_reasoning_tokens'),
 		totalTokens: integer('total_tokens'),
+
+		estimatedCost: real('estimated_cost'),
 
 		createdAt: integer('created_at', { mode: 'timestamp_ms' })
 			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)

@@ -9,9 +9,11 @@ import {
 import * as projectQueries from '../queries/project.queries';
 import * as llmConfigQueries from '../queries/project-llm-config.queries';
 import { getEnvApiKey } from '../utils/llm';
+import { scheduleSaveLlmInferenceRecord } from '../utils/schedule-task';
 
 export async function transcribeAudio(
 	projectId: string,
+	userId: string,
 	audio: string,
 	overrides?: { provider?: TranscribeProvider; modelId?: string },
 ): Promise<string> {
@@ -31,6 +33,17 @@ export async function transcribeAudio(
 	const audioBuffer = Buffer.from(audio, 'base64');
 
 	const result = await transcribe({ model, audio: audioBuffer });
+
+	scheduleSaveLlmInferenceRecord({
+		type: 'voice',
+		projectId,
+		userId,
+		chatId: null,
+		llmProvider: provider,
+		llmModelId: modelId,
+		estimatedCost: computeTranscriptionCost(provider, modelId, result.durationInSeconds),
+	});
+
 	return result.text;
 }
 
@@ -61,6 +74,19 @@ export async function getAvailableModels(projectId: string) {
 	}
 
 	return available;
+}
+
+function computeTranscriptionCost(
+	provider: TranscribeProvider,
+	modelId: string,
+	durationInSeconds: number | undefined,
+): number {
+	if (!durationInSeconds) {
+		return 0;
+	}
+	const modelDef = TRANSCRIBE_PROVIDERS[provider].models.find((m) => m.id === modelId);
+	const pricePerMinute = modelDef?.pricePerMinute ?? 0;
+	return (durationInSeconds / 60) * pricePerMinute;
 }
 
 async function resolveProviderSettings(

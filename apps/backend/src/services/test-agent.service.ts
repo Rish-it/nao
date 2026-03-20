@@ -2,6 +2,8 @@ import { generateText, ModelMessage, Output } from 'ai';
 import { z } from 'zod/v4';
 
 import type { UIMessage } from '../types/chat';
+import { convertToTokenUsage } from '../utils/ai';
+import { scheduleSaveLlmInferenceRecord } from '../utils/schedule-task';
 import { AgentRunResult, AgentService, ModelSelection } from './agent';
 
 type VerificationData = Record<string, string | number | boolean | null>[] | null;
@@ -18,8 +20,14 @@ export class TestAgentService extends AgentService {
 	 * Run a single prompt without persisting to a chat.
 	 * Used for testing/evaluation purposes.
 	 */
-	async runTest(projectId: string, prompt: string, modelSelection?: ModelSelection): Promise<AgentRunResult> {
+	async runTest(
+		projectId: string,
+		userId: string,
+		prompt: string,
+		modelSelection?: ModelSelection,
+	): Promise<AgentRunResult> {
 		const userMessage = TestAgentService._buildUserMessage(prompt);
+		const resolvedModelSelection = await this._getResolvedModelSelection(projectId, modelSelection);
 
 		const tempChat = {
 			id: crypto.randomUUID(),
@@ -31,8 +39,18 @@ export class TestAgentService extends AgentService {
 			projectId,
 		};
 
-		const agent = await this.create(tempChat, modelSelection);
-		return agent.generate([userMessage]);
+		const agent = await this.create(tempChat, resolvedModelSelection);
+		const result = await agent.generate([userMessage]);
+		scheduleSaveLlmInferenceRecord({
+			type: 'test',
+			projectId,
+			userId,
+			chatId: null,
+			llmProvider: resolvedModelSelection.provider,
+			llmModelId: resolvedModelSelection.modelId,
+			...result.usage,
+		});
+		return result;
 	}
 
 	/**
@@ -41,6 +59,7 @@ export class TestAgentService extends AgentService {
 	 */
 	async runVerification(
 		projectId: string,
+		userId: string,
 		agentResult: AgentRunResult,
 		expectedColumns: string[],
 		modelSelection?: ModelSelection,
@@ -59,6 +78,16 @@ export class TestAgentService extends AgentService {
 			...modelConfig,
 			output: Output.object({ schema }),
 			messages,
+		});
+
+		scheduleSaveLlmInferenceRecord({
+			type: 'test',
+			projectId,
+			userId,
+			chatId: null,
+			llmProvider: resolvedModelSelection.provider,
+			llmModelId: resolvedModelSelection.modelId,
+			...convertToTokenUsage(result.usage),
 		});
 
 		return { data: result.output.data ?? null };

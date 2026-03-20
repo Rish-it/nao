@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 import { useMutation, useQueryClient, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { ArchiveRestoreIcon, MessageSquare } from 'lucide-react';
+import { ArrowLeft, ArchiveRestoreIcon, MessageSquare } from 'lucide-react';
 import type { displayChart } from '@nao/shared/tools';
 import type { ParsedChartBlock, ParsedTableBlock } from '@/lib/story-segments';
 import { splitCodeIntoSegments } from '@/lib/story-segments';
@@ -33,6 +33,11 @@ function StoryPreviewPage() {
 	return (
 		<div className='flex flex-col flex-1 h-full overflow-hidden bg-panel min-w-0'>
 			<header className='flex items-center gap-3 border-b px-4 py-3 md:px-6 md:py-4 shrink-0 bg-background'>
+				<Button variant='ghost' size='icon' className='shrink-0 size-8' asChild>
+					<Link to='/stories'>
+						<ArrowLeft className='size-4' />
+					</Link>
+				</Button>
 				<h1 className='text-base font-medium truncate'>{story.title}</h1>
 				<Button variant='outline' size='sm' className='ml-auto gap-1.5 shrink-0' asChild>
 					<Link to='/$chatId' params={{ chatId }} state={{ openStoryId: storyId }}>

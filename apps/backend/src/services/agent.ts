@@ -42,6 +42,7 @@ import {
 	resolveProviderSettings,
 } from '../utils/llm';
 import { logger } from '../utils/logger';
+import { scheduleSaveLlmInferenceRecord } from '../utils/schedule-task';
 import { truncateMiddle } from '../utils/utils';
 import { compactionService } from './compaction';
 import { memoryService } from './memory';
@@ -293,6 +294,17 @@ class AgentManager {
 				try {
 					const stopReason = e.isAborted ? 'interrupted' : e.finishReason;
 					const tokenUsage = await this._getTotalUsage(result);
+					if (tokenUsage) {
+						scheduleSaveLlmInferenceRecord({
+							type: 'chat',
+							projectId: this.chat.projectId,
+							userId: this.chat.userId,
+							chatId: this.chat.id,
+							llmProvider: this._modelSelection.provider,
+							llmModelId: this._modelSelection.modelId,
+							...tokenUsage,
+						});
+					}
 					await chatQueries.upsertMessage({
 						...e.responseMessage,
 						chatId: this.chat.id,
@@ -439,7 +451,7 @@ class AgentManager {
 			return;
 		}
 
-		const { output } = await generateText({
+		const { output, usage } = await generateText({
 			model: modelResult.model,
 			system: 'Generate a short, descriptive title (3-8 words) for this conversation based on the user message. Always generate a title, no matter the input. Only capitalize the first letter of the title and nouns.',
 			messages: [
@@ -454,6 +466,16 @@ class AgentManager {
 				}),
 			}),
 			maxOutputTokens: 60,
+		});
+
+		scheduleSaveLlmInferenceRecord({
+			type: 'title_generation',
+			projectId: this.chat.projectId,
+			userId: this.chat.userId,
+			chatId: this.chat.id,
+			llmProvider: provider,
+			llmModelId: summaryModelId,
+			...convertToTokenUsage(usage),
 		});
 
 		const title = output?.title.trim();

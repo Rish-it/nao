@@ -108,5 +108,12 @@ export type ModelSelection = {
 	modelId: string;
 };
 
-export const LLM_INFERENCE_TYPES = ['memory_extraction', 'compaction', 'title_generation'] as const;
+export const LLM_INFERENCE_TYPES = [
+	'memory_extraction',
+	'compaction',
+	'title_generation',
+	'chat',
+	'test',
+	'voice',
+] as const;
 export type LlmInferenceType = (typeof LLM_INFERENCE_TYPES)[number];

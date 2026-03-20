@@ -33,6 +33,7 @@ export const testRoutes = async (app: App) => {
 		},
 		async (request, reply) => {
 			const projectId = request.project?.id;
+			const userId = request.user.id;
 			const { prompt, model, sql } = request.body;
 
 			if (!projectId) {
@@ -43,7 +44,7 @@ export const testRoutes = async (app: App) => {
 
 			try {
 				const modelSelection = model as ModelSelection | undefined;
-				const result = await testAgentService.runTest(projectId, prompt, modelSelection);
+				const result = await testAgentService.runTest(projectId, userId, prompt, modelSelection);
 				const project = await retrieveProjectById(projectId);
 
 				let verification;
@@ -54,6 +55,7 @@ export const testRoutes = async (app: App) => {
 					);
 					const { data } = await testAgentService.runVerification(
 						projectId,
+						userId,
 						result,
 						expectedColumns,
 						modelSelection,

@@ -9,6 +9,7 @@ import {
 	jsonb,
 	pgTable,
 	primaryKey,
+	real,
 	text,
 	timestamp,
 	unique,
@@ -502,6 +503,8 @@ export const llmInference = pgTable(
 		outputTextTokens: integer('output_text_tokens'),
 		outputReasoningTokens: integer('output_reasoning_tokens'),
 		totalTokens: integer('total_tokens'),
+
+		estimatedCost: real('estimated_cost'),
 
 		createdAt: timestamp('created_at').defaultNow().notNull(),
 	},
