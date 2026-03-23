@@ -1,0 +1,1 @@
+ALTER TABLE `llm_inference` ADD `estimated_cost` real;
