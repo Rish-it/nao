@@ -101,6 +101,7 @@ WORKDIR /app
 
 # Copy all artifacts with --chown to avoid expensive recursive `chown -R`
 COPY --from=python-builder --chown=nao:nao /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=python-builder --chown=nao:nao /usr/local/bin/nao /usr/local/bin/nao
 COPY --from=deps --chown=nao:nao /app/package.json ./
 COPY --from=deps --chown=nao:nao /app/node_modules ./node_modules
 
