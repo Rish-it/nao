@@ -1,8 +1,8 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "2e54cde3-5cc4-4a66-9649-6cf8994e77f3",
-  "prevId": "97ab8ed8-2b5b-4711-aabc-d5018734d3eb",
+  "id": "4b185c86-d6e4-4f38-88b1-625a117e38d3",
+  "prevId": "2e54cde3-5cc4-4a66-9649-6cf8994e77f3",
   "tables": {
     "account": {
       "name": "account",
@@ -570,6 +570,13 @@
           "notNull": true,
           "autoincrement": false,
           "default": "(cast(unixepoch('subsecond') * 1000 as integer))"
+        },
+        "estimated_cost": {
+          "name": "estimated_cost",
+          "type": "real",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Trash2 } from 'lucide-react';
-import { TeamsForm } from './teams-form';
+import { WhatsappForm } from './whatsapp-form';
 import { Button } from '@/components/ui/button';
 import { CopyableUrl } from '@/components/ui/copyable-url';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -9,21 +9,21 @@ import { LlmProviderIcon } from '@/components/ui/llm-provider-icon';
 import { SettingsCard } from '@/components/ui/settings-card';
 import { trpc } from '@/main';
 
-interface TeamsConfigSectionProps {
+interface WhatsappConfigSectionProps {
 	isAdmin: boolean;
 }
 
-export function TeamsConfigSection({ isAdmin }: TeamsConfigSectionProps) {
+export function WhatsappConfigSection({ isAdmin }: WhatsappConfigSectionProps) {
 	const queryClient = useQueryClient();
-	const teamsConfig = useQuery(trpc.project.getTeamsConfig.queryOptions());
+	const whatsappConfig = useQuery(trpc.project.getWhatsappConfig.queryOptions());
 	const { data: availableModels } = useQuery(trpc.project.getAvailableModels.queryOptions());
 
 	const [isEditing, setIsEditing] = useState(false);
 	type AvailableModel = NonNullable<typeof availableModels>[number];
 	const [selectedModel, setSelectedModel] = useState<AvailableModel | null>(null);
 
-	const projectConfig = teamsConfig.data?.projectConfig;
-	const webhookUrl = teamsConfig.data?.webhookUrl ?? '';
+	const projectConfig = whatsappConfig.data?.projectConfig;
+	const webhookUrl = whatsappConfig.data?.webhookUrl;
 
 	useEffect(() => {
 		if (!availableModels || availableModels.length === 0) {
@@ -36,23 +36,28 @@ export function TeamsConfigSection({ isAdmin }: TeamsConfigSectionProps) {
 		setSelectedModel(match || availableModels[0]);
 	}, [availableModels, projectConfig]);
 
-	const upsertTeamsConfig = useMutation(trpc.project.upsertTeamsConfig.mutationOptions());
-	const updateTeamsModel = useMutation(trpc.project.updateTeamsModelConfig.mutationOptions());
-	const deleteTeamsConfig = useMutation(trpc.project.deleteTeamsConfig.mutationOptions());
+	const upsertWhatsappConfig = useMutation(trpc.project.upsertWhatsappConfig.mutationOptions());
+	const updateWhatsappModel = useMutation(trpc.project.updateWhatsappModelConfig.mutationOptions());
+	const deleteWhatsappConfig = useMutation(trpc.project.deleteWhatsappConfig.mutationOptions());
 
-	const handleSubmit = async (values: { appId: string; appPassword: string; tenantId: string }) => {
-		await upsertTeamsConfig.mutateAsync({
+	const handleSubmit = async (values: {
+		accessToken: string;
+		appSecret: string;
+		phoneNumberId: string;
+		verifyToken: string;
+	}) => {
+		await upsertWhatsappConfig.mutateAsync({
 			...values,
 			modelProvider: selectedModel?.provider,
 			modelId: selectedModel?.modelId,
 		});
-		queryClient.invalidateQueries(trpc.project.getTeamsConfig.queryOptions());
+		queryClient.invalidateQueries(trpc.project.getWhatsappConfig.queryOptions());
 		setIsEditing(false);
 	};
 
 	const handleDelete = async () => {
-		await deleteTeamsConfig.mutateAsync();
-		queryClient.removeQueries(trpc.project.getTeamsConfig.queryOptions());
+		await deleteWhatsappConfig.mutateAsync();
+		queryClient.removeQueries(trpc.project.getWhatsappConfig.queryOptions());
 	};
 
 	const handleStartEditing = () => {
@@ -68,9 +73,9 @@ export function TeamsConfigSection({ isAdmin }: TeamsConfigSectionProps) {
 		async (value: string) => {
 			const model = availableModels?.find((m) => `${m.provider}:${m.modelId}` === value);
 			if (model) {
-				await updateTeamsModel.mutateAsync({ modelProvider: model.provider, modelId: model.modelId });
 				setSelectedModel(model);
-				queryClient.invalidateQueries(trpc.project.getTeamsConfig.queryOptions());
+				await updateWhatsappModel.mutateAsync({ modelProvider: model.provider, modelId: model.modelId });
+				queryClient.invalidateQueries(trpc.project.getWhatsappConfig.queryOptions());
 			}
 		},
 		// eslint-disable-next-line react-hooks/exhaustive-deps
@@ -79,23 +84,20 @@ export function TeamsConfigSection({ isAdmin }: TeamsConfigSectionProps) {
 
 	if (!isAdmin) {
 		return (
-			<SettingsCard title='Connection' description='Your Teams app credentials'>
+			<SettingsCard title='Connection' description='Your WhatsApp app credentials'>
 				{projectConfig ? (
 					<div className='grid gap-1'>
-						<span className='text-sm font-medium text-foreground'>Teams App</span>
+						<span className='text-sm font-medium text-foreground'>WhatsApp App</span>
 						<span className='text-xs font-mono text-muted-foreground'>
-							App ID: {projectConfig.appIdPreview}
+							Access Token: {projectConfig.accessTokenPreview}
 						</span>
 						<span className='text-xs font-mono text-muted-foreground'>
-							App Password: {projectConfig.appPasswordPreview}
-						</span>
-						<span className='text-xs font-mono text-muted-foreground'>
-							Tenant ID: {projectConfig.tenantIdPreview}
+							Phone Number ID: {projectConfig.phoneNumberIdPreview}
 						</span>
 					</div>
 				) : (
 					<p className='text-sm text-muted-foreground'>
-						No Teams integration configured. Contact an admin to set it up.
+						No WhatsApp integration configured. Contact an admin to set it up.
 					</p>
 				)}
 			</SettingsCard>
@@ -104,12 +106,11 @@ export function TeamsConfigSection({ isAdmin }: TeamsConfigSectionProps) {
 
 	if (isEditing || !projectConfig) {
 		return (
-			<TeamsForm
+			<WhatsappForm
 				hasProjectConfig={!!projectConfig}
 				onSubmit={handleSubmit}
 				onCancel={() => setIsEditing(false)}
-				isPending={upsertTeamsConfig.isPending}
-				teamsRedirectUrl={teamsConfig.data?.redirectUrl}
+				isPending={upsertWhatsappConfig.isPending}
 			/>
 		);
 	}
@@ -118,18 +119,21 @@ export function TeamsConfigSection({ isAdmin }: TeamsConfigSectionProps) {
 
 	return (
 		<div className='flex flex-col gap-6'>
-			<SettingsCard title='Connection' description='Your Teams app credentials'>
+			<SettingsCard title='Connection' description='Your WhatsApp app credentials'>
 				<div className='flex items-center gap-4'>
 					<div className='flex-1 grid gap-1'>
-						<span className='text-sm font-medium text-foreground'>Teams App</span>
+						<span className='text-sm font-medium text-foreground'>WhatsApp App</span>
 						<span className='text-xs font-mono text-muted-foreground'>
-							App ID: {projectConfig.appIdPreview}
+							Access Token: {projectConfig.accessTokenPreview}
 						</span>
 						<span className='text-xs font-mono text-muted-foreground'>
-							App Password: {projectConfig.appPasswordPreview}
+							App Secret: {projectConfig.appSecretPreview}
 						</span>
 						<span className='text-xs font-mono text-muted-foreground'>
-							Tenant ID: {projectConfig.tenantIdPreview}
+							Phone Number ID: {projectConfig.phoneNumberIdPreview}
+						</span>
+						<span className='text-xs font-mono text-muted-foreground'>
+							Verify Token: {projectConfig.verifyTokenPreview}
 						</span>
 					</div>
 					<div className='flex gap-1'>
@@ -140,7 +144,7 @@ export function TeamsConfigSection({ isAdmin }: TeamsConfigSectionProps) {
 							variant='ghost'
 							size='icon-sm'
 							onClick={handleDelete}
-							disabled={deleteTeamsConfig.isPending}
+							disabled={deleteWhatsappConfig.isPending}
 						>
 							<Trash2 className='size-4 text-destructive' />
 						</Button>
@@ -149,20 +153,22 @@ export function TeamsConfigSection({ isAdmin }: TeamsConfigSectionProps) {
 			</SettingsCard>
 
 			{webhookUrl && (
-				<SettingsCard title='Messaging Endpoint' description='Register this URL in your Azure bot settings'>
+				<SettingsCard title='Webhook' description='Register this URL in your WhatsApp app settings'>
 					<CopyableUrl url={webhookUrl} />
 				</SettingsCard>
 			)}
 
-			<SettingsCard title='Settings' description='Configure how the Teams bot behaves'>
+			<SettingsCard title='Settings' description='Configure how the WhatsApp bot behaves'>
 				<div className='grid gap-2'>
 					<label className='text-sm font-medium text-foreground'>Model</label>
-					<p className='text-xs text-muted-foreground'>The model used to answer questions asked in Teams.</p>
+					<p className='text-xs text-muted-foreground'>
+						The model used to answer questions asked via WhatsApp.
+					</p>
 					{hasMultipleModels ? (
 						<Select
 							value={selectedModel ? `${selectedModel.provider}:${selectedModel.modelId}` : undefined}
 							onValueChange={handleModelChange}
-							disabled={updateTeamsModel.isPending}
+							disabled={updateWhatsappModel.isPending}
 						>
 							<SelectTrigger className='w-full'>
 								<SelectValue>

@@ -20,7 +20,7 @@ import { StopReason, ToolState, UIMessagePartType } from '../types/chat';
 import { LLM_INFERENCE_TYPES, LlmProvider } from '../types/llm';
 import { LOG_LEVELS, LOG_SOURCES } from '../types/log';
 import { MEMORY_CATEGORIES } from '../types/memory';
-import { SlackSettings, TeamsSettings, TelegramSettings } from '../types/messaging-provider';
+import { SlackSettings, TeamsSettings, TelegramSettings, WhatsappSettings } from '../types/messaging-provider';
 import { ORG_ROLES } from '../types/organization';
 
 export const user = pgTable('user', {
@@ -147,6 +147,7 @@ export const project = pgTable(
 		slackSettings: jsonb('slack_settings').$type<SlackSettings>(),
 		teamsSettings: jsonb('teams_settings').$type<TeamsSettings>(),
 		telegramSettings: jsonb('telegram_settings').$type<TelegramSettings>(),
+		whatsappSettings: jsonb('whatsapp_settings').$type<WhatsappSettings>(),
 
 		createdAt: timestamp('created_at').defaultNow().notNull(),
 		updatedAt: timestamp('updated_at')
@@ -180,6 +181,7 @@ export const chat = pgTable(
 		slackThreadId: text('slack_thread_id'),
 		teamsThreadId: text('teams_thread_id'),
 		telegramThreadId: text('telegram_thread_id'),
+		whatsappThreadId: text('whatsapp_thread_id'),
 		createdAt: timestamp('created_at').defaultNow().notNull(),
 		updatedAt: timestamp('updated_at')
 			.defaultNow()
@@ -192,6 +194,7 @@ export const chat = pgTable(
 		index('chat_slack_thread_idx').on(table.slackThreadId),
 		index('chat_teams_thread_idx').on(table.teamsThreadId),
 		index('chat_telegram_thread_idx').on(table.telegramThreadId),
+		index('chat_whatsapp_thread_idx').on(table.whatsappThreadId),
 	],
 );
 
@@ -210,7 +213,7 @@ export const chatMessage = pgTable(
 		llmProvider: text('llm_provider').$type<LlmProvider>(),
 		llmModelId: text('llm_model_id'),
 		supersededAt: timestamp('superseded_at'),
-		source: text('source', { enum: ['slack', 'teams', 'telegram', 'web'] }),
+		source: text('source', { enum: ['slack', 'teams', 'telegram', 'whatsapp', 'web'] }),
 		createdAt: timestamp('created_at').defaultNow().notNull(),
 
 		// Token usage columns
