@@ -211,13 +211,6 @@
       "when": 1774271895478,
       "tag": "0029_add_whatsapp_channel",
       "breakpoints": true
-    },
-    {
-      "idx": 30,
-      "version": "7",
-      "when": 1774264650059,
-      "tag": "0030_add_estimated_cost",
-      "breakpoints": true
     }
   ]
 }

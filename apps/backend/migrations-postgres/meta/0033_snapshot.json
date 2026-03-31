@@ -1,6 +1,6 @@
 {
-  "id": "7d0a7ca1-dfbc-469a-bbd2-f54b8df32e61",
-  "prevId": "5ea82a0c-92cf-4756-8a27-e819f9f3ed93",
+  "id": "ed997d2d-c858-4535-8755-e99bc1617c73",
+  "prevId": "2d66e464-a941-4127-9d09-1ea87d9bf46d",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -161,6 +161,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
+        },
+        "deleted_at": {
+          "name": "deleted_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
         },
         "slack_thread_id": {
           "name": "slack_thread_id",
@@ -1007,6 +1013,44 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.message_image": {
+      "name": "message_image",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "data": {
+          "name": "data",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "media_type": {
+          "name": "media_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.message_part": {
       "name": "message_part",
       "schema": "",
@@ -1125,6 +1169,18 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
+        },
+        "media_type": {
+          "name": "media_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "image_id": {
+          "name": "image_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -1178,6 +1234,19 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
+        },
+        "message_part_image_id_message_image_id_fk": {
+          "name": "message_part_image_id_message_image_id_fk",
+          "tableFrom": "message_part",
+          "tableTo": "message_image",
+          "columnsFrom": [
+            "image_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
@@ -1203,6 +1272,10 @@
         "tool_call_fields_required": {
           "name": "tool_call_fields_required",
           "value": "CASE WHEN \"message_part\".\"type\" LIKE 'tool-%' THEN \"message_part\".\"tool_call_id\" IS NOT NULL AND \"message_part\".\"tool_state\" IS NOT NULL ELSE TRUE END"
+        },
+        "file_fields_required": {
+          "name": "file_fields_required",
+          "value": "CASE WHEN \"message_part\".\"type\" = 'file' THEN \"message_part\".\"media_type\" IS NOT NULL AND \"message_part\".\"image_id\" IS NOT NULL ELSE TRUE END"
         }
       },
       "isRLSEnabled": false
@@ -1544,7 +1617,7 @@
       "checkConstraints": {
         "local_project_path_required": {
           "name": "local_project_path_required",
-          "value": "CASE WHEN \"project\".\"type\" = 'local' THEN \"project\".\"path\" IS NOT NULL ELSE TRUE END"
+          "value": "CASE WHEN \"type\" = 'local' THEN \"path\" IS NOT NULL ELSE TRUE END"
         }
       },
       "isRLSEnabled": false
@@ -2059,6 +2132,12 @@
           "primaryKey": true,
           "notNull": true
         },
+        "story_id": {
+          "name": "story_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "project_id": {
           "name": "project_id",
           "type": "text",
@@ -2067,18 +2146,6 @@
         },
         "user_id": {
           "name": "user_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "chat_id": {
-          "name": "chat_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "story_id": {
-          "name": "story_id",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -2114,15 +2181,9 @@
           "method": "btree",
           "with": {}
         },
-        "shared_story_chat_story_idx": {
-          "name": "shared_story_chat_story_idx",
+        "shared_story_storyId_idx": {
+          "name": "shared_story_storyId_idx",
           "columns": [
-            {
-              "expression": "chat_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
             {
               "expression": "story_id",
               "isExpression": false,
@@ -2137,6 +2198,19 @@
         }
       },
       "foreignKeys": {
+        "shared_story_story_id_story_id_fk": {
+          "name": "shared_story_story_id_story_id_fk",
+          "tableFrom": "shared_story",
+          "tableTo": "story",
+          "columnsFrom": [
+            "story_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
         "shared_story_project_id_project_id_fk": {
           "name": "shared_story_project_id_project_id_fk",
           "tableFrom": "shared_story",
@@ -2156,19 +2230,6 @@
           "tableTo": "user",
           "columnsFrom": [
             "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "shared_story_chat_id_chat_id_fk": {
-          "name": "shared_story_chat_id_chat_id_fk",
-          "tableFrom": "shared_story",
-          "tableTo": "chat",
-          "columnsFrom": [
-            "chat_id"
           ],
           "columnsTo": [
             "id"
@@ -2243,8 +2304,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.story_version": {
-      "name": "story_version",
+    "public.story": {
+      "name": "story",
       "schema": "",
       "columns": {
         "id": {
@@ -2259,6 +2320,174 @@
           "primaryKey": false,
           "notNull": true
         },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_live": {
+          "name": "is_live",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_live_text_dynamic": {
+          "name": "is_live_text_dynamic",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "cache_schedule": {
+          "name": "cache_schedule",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cache_schedule_description": {
+          "name": "cache_schedule_description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "story_chatId_idx": {
+          "name": "story_chatId_idx",
+          "columns": [
+            {
+              "expression": "chat_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "story_chat_id_chat_id_fk": {
+          "name": "story_chat_id_chat_id_fk",
+          "tableFrom": "story",
+          "tableTo": "chat",
+          "columnsFrom": [
+            "chat_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "story_chat_slug_unique": {
+          "name": "story_chat_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "chat_id",
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.story_data_cache": {
+      "name": "story_data_cache",
+      "schema": "",
+      "columns": {
+        "story_id": {
+          "name": "story_id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "query_data": {
+          "name": "query_data",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "analysis_results": {
+          "name": "analysis_results",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cached_at": {
+          "name": "cached_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "story_data_cache_story_id_story_id_fk": {
+          "name": "story_data_cache_story_id_story_id_fk",
+          "tableFrom": "story_data_cache",
+          "tableTo": "story",
+          "columnsFrom": [
+            "story_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.story_version": {
+      "name": "story_version",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
         "story_id": {
           "name": "story_id",
           "type": "text",
@@ -2268,12 +2497,6 @@
         "version": {
           "name": "version",
           "type": "integer",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "title": {
-          "name": "title",
-          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
@@ -2295,12 +2518,6 @@
           "primaryKey": false,
           "notNull": true
         },
-        "archived_at": {
-          "name": "archived_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
@@ -2310,15 +2527,9 @@
         }
       },
       "indexes": {
-        "story_version_chat_story_idx": {
-          "name": "story_version_chat_story_idx",
+        "story_version_storyId_idx": {
+          "name": "story_version_storyId_idx",
           "columns": [
-            {
-              "expression": "chat_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
             {
               "expression": "story_id",
               "isExpression": false,
@@ -2333,12 +2544,12 @@
         }
       },
       "foreignKeys": {
-        "story_version_chat_id_chat_id_fk": {
-          "name": "story_version_chat_id_chat_id_fk",
+        "story_version_story_id_story_id_fk": {
+          "name": "story_version_story_id_story_id_fk",
           "tableFrom": "story_version",
-          "tableTo": "chat",
+          "tableTo": "story",
           "columnsFrom": [
-            "chat_id"
+            "story_id"
           ],
           "columnsTo": [
             "id"
@@ -2349,11 +2560,10 @@
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
-        "story_version_chat_story_version_unique": {
-          "name": "story_version_chat_story_version_unique",
+        "story_version_story_version_unique": {
+          "name": "story_version_story_version_unique",
           "nullsNotDistinct": false,
           "columns": [
-            "chat_id",
             "story_id",
             "version"
           ]
