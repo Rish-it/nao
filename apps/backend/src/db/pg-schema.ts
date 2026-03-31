@@ -156,10 +156,7 @@ export const project = pgTable(
 			.notNull(),
 	},
 	(t) => [
-		check(
-			'local_project_path_required',
-			sql`CASE WHEN ${t.type} = 'local' THEN ${t.path} IS NOT NULL ELSE TRUE END`,
-		),
+		check('local_project_path_required', sql`CASE WHEN "type" = 'local' THEN "path" IS NOT NULL ELSE TRUE END`),
 		index('project_orgId_idx').on(t.orgId),
 	],
 );
@@ -178,6 +175,7 @@ export const chat = pgTable(
 			.references(() => project.id, { onDelete: 'cascade' }),
 		title: text('title').notNull().default('New Conversation'),
 		isStarred: boolean('is_starred').default(false).notNull(),
+		deletedAt: timestamp('deleted_at'),
 		slackThreadId: text('slack_thread_id'),
 		teamsThreadId: text('teams_thread_id'),
 		telegramThreadId: text('telegram_thread_id'),
@@ -266,6 +264,10 @@ export const messagePart = pgTable(
 		// provider metadata columns
 		toolProviderMetadata: jsonb('tool_provider_metadata').$type<ProviderMetadata>(),
 		providerMetadata: jsonb('provider_metadata').$type<ProviderMetadata>(),
+
+		// file/image columns
+		mediaType: text('media_type'),
+		imageId: text('image_id').references(() => messageImage.id, { onDelete: 'set null' }),
 	},
 	(t) => [
 		index('parts_message_id_idx').on(t.messageId),
@@ -281,6 +283,10 @@ export const messagePart = pgTable(
 		check(
 			'tool_call_fields_required',
 			sql`CASE WHEN ${t.type} LIKE 'tool-%' THEN ${t.toolCallId} IS NOT NULL AND ${t.toolState} IS NOT NULL ELSE TRUE END`,
+		),
+		check(
+			'file_fields_required',
+			sql`CASE WHEN ${t.type} = 'file' THEN ${t.mediaType} IS NOT NULL AND ${t.imageId} IS NOT NULL ELSE TRUE END`,
 		),
 	],
 );
@@ -375,23 +381,19 @@ export const sharedStory = pgTable(
 		id: text('id')
 			.$defaultFn(() => crypto.randomUUID())
 			.primaryKey(),
+		storyId: text('story_id')
+			.notNull()
+			.references(() => story.id, { onDelete: 'cascade' }),
 		projectId: text('project_id')
 			.notNull()
 			.references(() => project.id, { onDelete: 'cascade' }),
 		userId: text('user_id')
 			.notNull()
 			.references(() => user.id, { onDelete: 'cascade' }),
-		chatId: text('chat_id')
-			.notNull()
-			.references(() => chat.id, { onDelete: 'cascade' }),
-		storyId: text('story_id').notNull(),
 		visibility: text('visibility', { enum: SHARE_VISIBILITY }).default('project').notNull(),
 		createdAt: timestamp('created_at').defaultNow().notNull(),
 	},
-	(t) => [
-		index('shared_story_projectId_idx').on(t.projectId),
-		index('shared_story_chat_story_idx').on(t.chatId, t.storyId),
-	],
+	(t) => [index('shared_story_projectId_idx').on(t.projectId), index('shared_story_storyId_idx').on(t.storyId)],
 );
 
 export const sharedStoryAccess = pgTable(
@@ -430,8 +432,8 @@ export const projectSavedPrompt = pgTable(
 export const STORY_ACTIONS = ['create', 'update', 'replace'] as const;
 export const STORY_SOURCES = ['assistant', 'user'] as const;
 
-export const storyVersion = pgTable(
-	'story_version',
+export const story = pgTable(
+	'story',
 	{
 		id: text('id')
 			.$defaultFn(() => crypto.randomUUID())
@@ -439,20 +441,52 @@ export const storyVersion = pgTable(
 		chatId: text('chat_id')
 			.notNull()
 			.references(() => chat.id, { onDelete: 'cascade' }),
-		storyId: text('story_id').notNull(),
-		version: integer('version').notNull(),
+		slug: text('slug').notNull(),
 		title: text('title').notNull(),
+		isLive: boolean('is_live').default(false).notNull(),
+		isLiveTextDynamic: boolean('is_live_text_dynamic').default(true).notNull(),
+		cacheSchedule: text('cache_schedule'),
+		cacheScheduleDescription: text('cache_schedule_description'),
+		archivedAt: timestamp('archived_at'),
+		createdAt: timestamp('created_at').defaultNow().notNull(),
+		updatedAt: timestamp('updated_at')
+			.defaultNow()
+			.$onUpdate(() => new Date())
+			.notNull(),
+	},
+	(t) => [unique('story_chat_slug_unique').on(t.chatId, t.slug), index('story_chatId_idx').on(t.chatId)],
+);
+
+export const storyVersion = pgTable(
+	'story_version',
+	{
+		id: text('id')
+			.$defaultFn(() => crypto.randomUUID())
+			.primaryKey(),
+		storyId: text('story_id')
+			.notNull()
+			.references(() => story.id, { onDelete: 'cascade' }),
+		version: integer('version').notNull(),
 		code: text('code').notNull(),
 		action: text('action', { enum: STORY_ACTIONS }).notNull(),
 		source: text('source', { enum: STORY_SOURCES }).notNull(),
-		archivedAt: timestamp('archived_at'),
 		createdAt: timestamp('created_at').defaultNow().notNull(),
 	},
 	(t) => [
-		index('story_version_chat_story_idx').on(t.chatId, t.storyId),
-		unique('story_version_chat_story_version_unique').on(t.chatId, t.storyId, t.version),
+		index('story_version_storyId_idx').on(t.storyId),
+		unique('story_version_story_version_unique').on(t.storyId, t.version),
 	],
 );
+
+export const storyDataCache = pgTable('story_data_cache', {
+	storyId: text('story_id')
+		.notNull()
+		.references(() => story.id, { onDelete: 'cascade' })
+		.primaryKey(),
+	queryData: jsonb('query_data').$type<Record<string, { data: unknown[]; columns: string[] }>>().notNull(),
+	analysisResults: jsonb('analysis_results').$type<Record<string, string>>(),
+	cachedAt: timestamp('cached_at').defaultNow().notNull(),
+});
 
 export const memories = pgTable(
 	'memories',
@@ -517,6 +551,15 @@ export const llmInference = pgTable(
 		index('llm_inference_type_idx').on(t.type),
 	],
 );
+
+export const messageImage = pgTable('message_image', {
+	id: text('id')
+		.$defaultFn(() => crypto.randomUUID())
+		.primaryKey(),
+	data: text('data').notNull(),
+	mediaType: text('media_type').notNull(),
+	createdAt: timestamp('created_at').defaultNow().notNull(),
+});
 
 export const message_part_chart_image = pgTable('chart_image', {
 	id: text('id')

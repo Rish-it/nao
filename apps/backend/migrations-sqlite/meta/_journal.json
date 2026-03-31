@@ -211,6 +211,34 @@
       "when": 1774271885552,
       "tag": "0029_add_whatsapp_channel",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "6",
+      "when": 1774539602329,
+      "tag": "0030_add_chat_soft_delete",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "6",
+      "when": 1774549788607,
+      "tag": "0031_live_stories",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "6",
+      "when": 1774873099155,
+      "tag": "0032_add_images",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "6",
+      "when": 1774899600001,
+      "tag": "0033_add_estimated_cost",
+      "breakpoints": true
     }
   ]
 }
