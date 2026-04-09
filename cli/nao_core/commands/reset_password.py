@@ -8,12 +8,8 @@ import sys
 import unicodedata
 from pathlib import Path
 
-from rich.console import Console
-
 from nao_core.tracking import track_command
 from nao_core.ui import UI, ask_confirm, ask_text
-
-console = Console()
 
 SCRYPT_N = 16384
 SCRYPT_R = 16
@@ -62,6 +58,11 @@ def _resolve_db_path() -> Path:
         bin_dir = Path(__file__).parent.parent / "bin"
         db_path = bin_dir / "db.sqlite"
 
+        if not db_path.exists():
+            dev_path = Path(__file__).parent.parent.parent.parent / "apps" / "backend" / "db.sqlite"
+            if dev_path.exists():
+                db_path = dev_path
+
     if not db_path.exists():
         UI.error(f"Database not found at {db_path}")
         UI.print("[dim]Make sure you have started the app at least once with 'nao chat'.[/dim]")
@@ -77,7 +78,7 @@ def reset_password():
     Directly updates the password in the local SQLite database.
     Use this when SMTP is not configured and you've forgotten your password.
     """
-    console.print("\n[bold cyan]🔑 Password Reset[/bold cyan]\n")
+    UI.print("\n[bold cyan]🔑 Password Reset[/bold cyan]\n")
 
     db_path = _resolve_db_path()
     UI.success(f"Found database at {db_path}")
@@ -111,17 +112,16 @@ def reset_password():
 
         while True:
             new_password = ask_text("New password:", password=True, required_field=True)
-            assert new_password is not None
-            if not _validate_password(new_password):
-                UI.warn(
-                    "Password must be at least 8 characters and include "
-                    "uppercase, lowercase, number, and special character."
-                )
+            if not new_password or not _validate_password(new_password):
+                if new_password is not None:
+                    UI.warn(
+                        "Password must be at least 8 characters and include "
+                        "uppercase, lowercase, number, and special character."
+                    )
                 continue
 
             confirm_password = ask_text("Confirm password:", password=True, required_field=True)
-            assert confirm_password is not None
-            if new_password != confirm_password:
+            if not new_password or not confirm_password or new_password != confirm_password:
                 UI.warn("Passwords do not match. Try again.")
                 continue
 
@@ -131,7 +131,6 @@ def reset_password():
             UI.print("Cancelled.")
             return
 
-        assert new_password is not None
         hashed = _hash_password(new_password)
 
         conn.execute("UPDATE account SET password = ? WHERE id = ?", (hashed, account_id))
@@ -140,5 +139,8 @@ def reset_password():
 
         UI.success("Password has been reset. You can now log in with your new password.")
 
+    except sqlite3.Error as e:
+        UI.error(f"Database error: {e}")
+        sys.exit(1)
     finally:
         conn.close()
