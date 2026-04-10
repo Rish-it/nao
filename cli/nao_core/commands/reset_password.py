@@ -85,8 +85,9 @@ def reset_password():
 
     email = ask_text("Email address:", required_field=True)
 
-    conn = sqlite3.connect(str(db_path))
+    conn = None
     try:
+        conn = sqlite3.connect(str(db_path))
         row = conn.execute(
             "SELECT u.id, u.name FROM user u WHERE u.email = ?",
             (email,),
@@ -143,4 +144,5 @@ def reset_password():
         UI.error(f"Database error: {e}")
         sys.exit(1)
     finally:
-        conn.close()
+        if conn:
+            conn.close()
