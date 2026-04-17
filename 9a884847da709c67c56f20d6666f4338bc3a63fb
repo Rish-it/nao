@@ -1,0 +1,28 @@
+cli/nao_core/templates/engine.py
+  b4b2ac0a67e15bf0 176-179,223-237,240,244,252-254,337-342,359
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "9a884847da709c67c56f20d6666f4338bc3a63fb",
+  "prompts": {
+    "b4b2ac0a67e15bf0": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dad00e80-f225-496a-b5ee-5a835b75a8f6",
+        "model": "<synthetic>"
+      },
+      "human_author": "Rishit Sharma",
+      "messages": [],
+      "total_additions": 1777,
+      "total_deletions": 42,
+      "accepted_lines": 1791,
+      "overriden_lines": 0
+    }
+  },
+  "humans": {
+    "h_ef2d7f928b1d51": {
+      "author": "Rishit Sharma"
+    }
+  }
+}
