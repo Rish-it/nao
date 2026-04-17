@@ -173,6 +173,10 @@ class TemplateEngine:
             raise RuntimeError("Missing API key for Anthropic.")
 
         client = Anthropic(api_key=self.llm_config.api_key)
+        return self._run_anthropic_messages(client, model, prompt_text)
+
+    def _run_anthropic_messages(self, client: Any, model: str, prompt_text: str) -> str:
+        """Invoke an Anthropic-compatible client (direct or Vertex) and return the text."""
         response = client.messages.create(
             model=model,
             max_tokens=1024,
@@ -216,16 +220,28 @@ class TemplateEngine:
 
     def _generate_gemini(self, model: str, prompt_text: str) -> str:
         """Generate text via Google Gemini API."""
-        from nao_core.deps import require_dependency
-
-        require_dependency("google.genai", "gemini", "for Google Gemini LLM provider")
-        from google import genai
-        from google.genai import types
-
         if not self.llm_config or not self.llm_config.api_key:
             raise RuntimeError("Missing API key for Gemini.")
 
-        client = genai.Client(api_key=self.llm_config.api_key)
+        return self._run_genai_client(
+            {"api_key": self.llm_config.api_key},
+            model,
+            prompt_text,
+            extra="gemini",
+            purpose="for Google Gemini LLM provider",
+        )
+
+    def _run_genai_client(
+        self, client_kwargs: dict[str, Any], model: str, prompt_text: str, *, extra: str, purpose: str
+    ) -> str:
+        """Build a google-genai client (direct or Vertex) and return the generated text."""
+        from nao_core.deps import require_dependency
+
+        require_dependency("google.genai", extra, purpose)
+        from google import genai
+        from google.genai import types
+
+        client = genai.Client(**client_kwargs)
         response = client.models.generate_content(
             model=model,
             contents=prompt_text,
@@ -233,9 +249,9 @@ class TemplateEngine:
         )
 
         content = getattr(response, "text", None)
-        if content:
-            return str(content).strip()
-        raise RuntimeError("Empty response from model.")
+        if not content:
+            raise RuntimeError("Empty response from model.")
+        return str(content).strip()
 
     def _generate_ollama(self, model: str, prompt_text: str) -> str:
         """Generate text via local Ollama chat API."""
@@ -314,27 +330,17 @@ class TemplateEngine:
         self, model: str, prompt_text: str, project: str, location: str, credentials: Any
     ) -> str:
         """Generate text via Gemini on Vertex AI using google-genai."""
-        from nao_core.deps import require_dependency
-
-        require_dependency("google.genai", "gemini", "for Gemini models on Vertex AI")
-        from google import genai
-        from google.genai import types
-
         client_kwargs: dict[str, Any] = {"vertexai": True, "project": project, "location": location}
         if credentials is not None:
             client_kwargs["credentials"] = credentials
 
-        client = genai.Client(**client_kwargs)
-        response = client.models.generate_content(
-            model=model,
-            contents=prompt_text,
-            config=types.GenerateContentConfig(temperature=0),
+        return self._run_genai_client(
+            client_kwargs,
+            model,
+            prompt_text,
+            extra="gemini",
+            purpose="for Gemini models on Vertex AI",
         )
-
-        content = getattr(response, "text", None)
-        if not content:
-            raise RuntimeError("Empty response from model.")
-        return str(content).strip()
 
     def _generate_vertex_anthropic(
         self, model: str, prompt_text: str, project: str, location: str, credentials: Any
@@ -350,23 +356,7 @@ class TemplateEngine:
             client_kwargs["credentials"] = credentials
 
         client = AnthropicVertex(**client_kwargs)
-        response = client.messages.create(
-            model=model,
-            max_tokens=1024,
-            temperature=0,
-            messages=[{"role": "user", "content": prompt_text}],
-        )
-
-        parts: list[str] = []
-        for block in response.content:
-            text = getattr(block, "text", None)
-            if text:
-                parts.append(str(text))
-
-        content = "\n".join(parts).strip()
-        if not content:
-            raise RuntimeError("Empty response from model.")
-        return content
+        return self._run_anthropic_messages(client, model, prompt_text)
 
     def _build_vertex_credentials(self) -> Any:
         """Build explicit GCP credentials from inline JSON or a key file.
