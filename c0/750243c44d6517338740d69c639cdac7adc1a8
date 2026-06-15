@@ -1,0 +1,24 @@
+apps/frontend/src/components/settings-search-index.ts
+  s_a37388a161eef8::t_717751507033db 363-367
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "c0750243c44d6517338740d69c639cdac7adc1a8",
+  "prompts": {},
+  "humans": {
+    "h_ef2d7f928b1d51": {
+      "author": "Rishit Sharma"
+    }
+  },
+  "sessions": {
+    "s_a37388a161eef8": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "644e03df-2ea0-4738-9628-3a9b88e2f17e",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Rishit Sharma <rishitsharmar89@gmail.com>"
+    }
+  }
+}
