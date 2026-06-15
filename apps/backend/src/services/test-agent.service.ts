@@ -4,6 +4,8 @@ import { z } from 'zod/v4';
 
 import type { UIMessage } from '../types/chat';
 import type { ModelCosts } from '../types/llm';
+import { convertToTokenUsage } from '../utils/ai';
+import { scheduleSaveLlmInferenceRecord } from '../utils/schedule-task';
 import { AgentRunResult, AgentService } from './agent';
 
 type VerificationData = Record<string, string | number | boolean | null>[] | null;
@@ -22,6 +24,7 @@ export class TestAgentService extends AgentService {
 	 */
 	async runTest(
 		projectId: string,
+		userId: string,
 		prompt: string,
 		modelSelection?: LlmSelectedModel,
 		costs?: ModelCosts,
@@ -34,7 +37,7 @@ export class TestAgentService extends AgentService {
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
 			messages: [userMessage],
-			userId: 'test',
+			userId,
 			projectId,
 			testMode: true,
 		};
@@ -49,6 +52,7 @@ export class TestAgentService extends AgentService {
 	 */
 	async runVerification(
 		projectId: string,
+		userId: string,
 		agentResult: AgentRunResult,
 		expectedColumns: string[],
 		modelSelection?: LlmSelectedModel,
@@ -67,6 +71,16 @@ export class TestAgentService extends AgentService {
 			...modelConfig,
 			output: Output.object({ schema }),
 			messages,
+		});
+
+		scheduleSaveLlmInferenceRecord({
+			type: 'test',
+			projectId,
+			userId,
+			chatId: null,
+			llmProvider: resolvedSelectedModel.provider,
+			llmModelId: resolvedSelectedModel.modelId,
+			...convertToTokenUsage(result.totalUsage),
 		});
 
 		return { data: result.output.data ?? null };

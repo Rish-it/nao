@@ -45,7 +45,7 @@ export const testRoutes = async (app: App) => {
 
 			try {
 				const modelSelection = model as LlmSelectedModel | undefined;
-				const result = await testAgentService.runTest(projectId, prompt, modelSelection, costs);
+				const result = await testAgentService.runTest(projectId, userId, prompt, modelSelection, costs);
 				const project = await retrieveProjectById(projectId);
 
 				let verification;
@@ -66,6 +66,7 @@ export const testRoutes = async (app: App) => {
 					);
 					const { data } = await testAgentService.runVerification(
 						projectId,
+						userId,
 						result,
 						expectedColumns,
 						modelSelection,

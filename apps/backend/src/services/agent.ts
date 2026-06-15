@@ -63,6 +63,7 @@ import {
 } from '../utils/llm';
 import { logger } from '../utils/logger';
 import { addPromptCache } from '../utils/prompt-cache';
+import { scheduleSaveLlmInferenceRecord } from '../utils/schedule-task';
 import { truncateMiddle } from '../utils/utils';
 import { compactionService } from './compaction';
 import { hasFeature, LICENSE_FEATURES } from './license.service';
@@ -445,6 +446,17 @@ class AgentManager {
 				try {
 					const stopReason = e.isAborted ? 'interrupted' : e.finishReason;
 					const tokenUsage = await this._getTotalUsage(result);
+					if (tokenUsage) {
+						scheduleSaveLlmInferenceRecord({
+							type: 'chat',
+							projectId: this.chat.projectId,
+							userId: this.chat.userId,
+							chatId: this.chat.id,
+							llmProvider: this._modelSelection.provider,
+							llmModelId: this._modelSelection.modelId,
+							...tokenUsage,
+						});
+					}
 					const [settledMessage] = settleInterruptedToolParts([e.responseMessage]);
 					await chatQueries.upsertMessage({
 						...settledMessage,
@@ -621,7 +633,7 @@ class AgentManager {
 			return;
 		}
 
-		const { output } = await generateText({
+		const result = await generateText({
 			model: modelResult.model,
 			system: 'Generate a short, descriptive title (3-8 words) for this conversation based on the user message. Always generate a title, no matter the input. Only capitalize the first letter of the title and nouns.',
 			messages: [
@@ -638,7 +650,17 @@ class AgentManager {
 			maxOutputTokens: 60,
 		});
 
-		const title = output?.title.trim();
+		scheduleSaveLlmInferenceRecord({
+			type: 'title_generation',
+			projectId: this.chat.projectId,
+			userId: this.chat.userId,
+			chatId: this.chat.id,
+			llmProvider: provider,
+			llmModelId: summaryModelId,
+			...convertToTokenUsage(result.totalUsage),
+		});
+
+		const title = result.output?.title.trim();
 		if (!title) {
 			return;
 		}
@@ -693,6 +715,15 @@ class AgentManager {
 			const durationMs = Math.round(performance.now() - startTime);
 
 			const usage = convertToTokenUsage(result.totalUsage);
+			scheduleSaveLlmInferenceRecord({
+				type: this.chat.testMode ? 'test' : 'chat',
+				projectId: this.chat.projectId,
+				userId: this.chat.userId,
+				chatId: this.chat.testMode ? null : this.chat.id,
+				llmProvider: this._modelSelection.provider,
+				llmModelId: this._modelSelection.modelId,
+				...usage,
+			});
 			const customModels = await llmConfigQueries
 				.getProjectLlmConfigByProvider(this.chat.projectId, this._modelSelection.provider)
 				.then((c) => c?.customModels ?? [])

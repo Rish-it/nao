@@ -125,5 +125,12 @@ export type LlmProvidersType = {
 	[P in LlmProvider]: ProviderConfig<P>;
 };
 
-export const LLM_INFERENCE_TYPES = ['memory_extraction', 'compaction', 'title_generation'] as const;
+export const LLM_INFERENCE_TYPES = [
+	'chat',
+	'test',
+	'memory_extraction',
+	'compaction',
+	'title_generation',
+	'voice',
+] as const;
 export type LlmInferenceType = (typeof LLM_INFERENCE_TYPES)[number];

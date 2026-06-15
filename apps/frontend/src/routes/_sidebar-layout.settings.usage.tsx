@@ -111,6 +111,26 @@ function UsagePage() {
 				/>
 			)}
 
+			{chartView === 'actions' && (
+				<UsageChartCard
+					title='Cost by action'
+					description='Estimated LLM cost in USD by product area.'
+					isLoading={messagesUsage.isLoading}
+					isFetching={messagesUsage.isFetching}
+					isError={messagesUsage.isError}
+					data={chartData}
+					chartType='stacked_bar'
+					xAxisLabelFormatter={(value) => format(new Date(value), dateFormats[granularity])}
+					series={[
+						{ data_key: 'chatCost', color: 'var(--chart-1)', label: 'Chats' },
+						{ data_key: 'testCost', color: 'var(--chart-2)', label: 'Tests' },
+						{ data_key: 'memoryCost', color: 'var(--chart-3)', label: 'Memory' },
+						{ data_key: 'voiceCost', color: 'var(--chart-4)', label: 'Voice' },
+					]}
+					filters={filtersComponent}
+				/>
+			)}
+
 			<SettingsCard
 				title='Feedbacks'
 				description='Feedbacks users have given to the agent during their sessions.'

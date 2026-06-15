@@ -30,4 +30,8 @@ export interface UsageRecord {
 	inputCacheWriteCost: number;
 	outputCost: number;
 	totalCost: number;
+	chatCost: number;
+	testCost: number;
+	memoryCost: number;
+	voiceCost: number;
 }

@@ -10,6 +10,7 @@ import {
 	index,
 	integer,
 	primaryKey,
+	real,
 	sqliteTable,
 	text,
 	unique,
@@ -949,6 +950,7 @@ export const llmInference = sqliteTable(
 		outputTextTokens: integer('output_text_tokens'),
 		outputReasoningTokens: integer('output_reasoning_tokens'),
 		totalTokens: integer('total_tokens'),
+		estimatedCost: real('estimated_cost'),
 
 		createdAt: integer('created_at', { mode: 'timestamp_ms' })
 			.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)

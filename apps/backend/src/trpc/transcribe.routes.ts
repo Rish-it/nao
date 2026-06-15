@@ -17,7 +17,7 @@ export const transcribeRoutes = {
 		)
 		.mutation(async ({ ctx, input }) => {
 			try {
-				const text = await transcribeService.transcribeAudio(ctx.project.id, input.audio, {
+				const text = await transcribeService.transcribeAudio(ctx.project.id, ctx.user.id, input.audio, {
 					provider: input.provider,
 					modelId: input.modelId,
 				});

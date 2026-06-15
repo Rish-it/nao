@@ -337,6 +337,13 @@
       "when": 1781092652332,
       "tag": "0047_recommendations",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1781505976257,
+      "tag": "0048_add_estimated_cost_to_llm_inference",
+      "breakpoints": true
     }
   ]
 }
