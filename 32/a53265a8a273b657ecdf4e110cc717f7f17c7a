@@ -1,0 +1,69 @@
+apps/backend/src/types/llm.ts
+  s_281241b551fb53::t_7a758ee5709a02 128-135
+apps/backend/src/db/sqlite-schema.ts
+  s_281241b551fb53::t_840b8c580e0520 13,953
+apps/backend/src/services/agent.ts
+  s_281241b551fb53::t_e49dbfd5ea1a00 66,449-459,636,653-663,718-726
+apps/backend/src/trpc/transcribe.routes.ts
+  s_281241b551fb53::t_9784b20b91bc78 20
+apps/frontend/src/components/settings/usage-filters.tsx
+  s_281241b551fb53::t_8793920dc089f5 6,18
+apps/backend/migrations-sqlite/0048_add_estimated_cost_to_llm_inference.sql
+  s_281241b551fb53::t_ac81ca00302130 1
+apps/backend/src/utils/date.ts
+  s_281241b551fb53::t_58578ee9ee4230 124-127
+apps/backend/migrations-sqlite/meta/_journal.json
+  s_281241b551fb53::t_ac81ca00302130 340-346
+apps/backend/tests/usage-action-costs.test.ts
+  s_281241b551fb53::t_facc455eeb3a7f 1-4,6-8,10-11,15-26,28-42,49-121,134-141,143-163
+  s_281241b551fb53::t_c4c1405fabd914 9
+  s_281241b551fb53::t_7a758ee5709a02 43-48,133
+  s_281241b551fb53::t_1deb900b8c5200 5,12-14
+  s_281241b551fb53::t_3ada2847cf3473 27,122-132,142
+apps/backend/src/services/test-agent.service.ts
+  s_281241b551fb53::t_326928bc2137f3 7-8,27,40,55,76-83
+apps/backend/src/db/pg-schema.ts
+  s_281241b551fb53::t_6c0353edf0c666 16,889
+apps/backend/src/services/transcribe.service.ts
+  s_281241b551fb53::t_2e90c836b39236 12,16,36-44,77-91
+apps/backend/migrations-postgres/meta/0048_snapshot.json
+  s_281241b551fb53::t_c1e857da7b9910 1-6136
+apps/backend/src/routes/test.ts
+  s_281241b551fb53::t_09bd1f2d745f66 48,69
+apps/frontend/src/routes/_sidebar-layout.settings.usage.tsx
+  s_281241b551fb53::t_d0a6eae94f4581 114-133
+apps/backend/src/services/whatsapp.ts
+  s_281241b551fb53::t_e171a19b99306c 346
+apps/backend/src/types/usage.ts
+  s_281241b551fb53::t_f46534be8b8760 33-36
+apps/backend/migrations-sqlite/meta/0048_snapshot.json
+  s_281241b551fb53::t_ac81ca00302130 1-5743
+apps/backend/migrations-postgres/0048_add_estimated_cost_to_llm_inference.sql
+  s_281241b551fb53::t_c1e857da7b9910 1
+apps/backend/migrations-postgres/meta/_journal.json
+  s_281241b551fb53::t_c1e857da7b9910 340-346
+apps/backend/src/queries/usage.queries.ts
+  s_281241b551fb53::t_d282b59b1976a7 51-66,73-78,82,116-122,124-130,145-148,152,159-166,179-223
+  s_281241b551fb53::t_7051a40427d75f 123,131-139,141-144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.7",
+  "base_commit_sha": "32a53265a8a273b657ecdf4e110cc717f7f17c7a",
+  "prompts": {},
+  "humans": {
+    "h_ef2d7f928b1d51": {
+      "author": "Rishit Sharma"
+    }
+  },
+  "sessions": {
+    "s_281241b551fb53": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "019ec9b6-2f05-76a2-ada7-6ad83af45c51",
+        "model": "gpt-5.5"
+      },
+      "human_author": "Rishit Sharma <rishitsharmar89@gmail.com>"
+    }
+  }
+}
