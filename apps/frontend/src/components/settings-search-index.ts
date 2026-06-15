@@ -360,6 +360,14 @@ export const settingsSearchIndex: SettingsSearchEntry[] = [
 	{
 		page: '/settings/usage',
 		pageLabel: 'Usage & Costs',
+		title: 'Cost by action',
+		description: 'Estimated LLM cost in USD by product area.',
+		keywords: ['actions', 'chats', 'tests', 'memory', 'voice', 'cost breakdown', 'by action'],
+		adminOnly: true,
+	},
+	{
+		page: '/settings/usage',
+		pageLabel: 'Usage & Costs',
 		title: 'Feedbacks',
 		description: 'Feedbacks users have given to the agent during their sessions.',
 		keywords: ['thumbs up', 'thumbs down', 'rating', 'review'],
