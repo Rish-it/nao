@@ -1,0 +1,27 @@
+cli/tests/nao_core/commands/test_runner.py
+  s_5e4f40e0a148a1::t_7dffd587c6db61 136-137,139-149
+  s_5e4f40e0a148a1::t_26a60e1e956979 18-25
+  s_5e4f40e0a148a1::t_8c728395dc0a0d 26
+  s_5e4f40e0a148a1::t_41d973bc8d8d2a 138
+cli/nao_core/commands/test/runner.py
+  s_5e4f40e0a148a1::t_4a223b737bb3dc 26-30
+  s_5e4f40e0a148a1::t_695e8c3d1d12e1 404
+  s_5e4f40e0a148a1::t_08c78251955747 22
+  s_5e4f40e0a148a1::t_75a4e2d810d443 31-32
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.15",
+  "base_commit_sha": "4b9a6c27b0fd21b95f950869f49d57db601b2f54",
+  "prompts": {},
+  "sessions": {
+    "s_5e4f40e0a148a1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "cbe5ba28-806a-4f15-a695-3f3b28946f55",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Rishit Sharma <rishitsharmar89@gmail.com>"
+    }
+  }
+}
