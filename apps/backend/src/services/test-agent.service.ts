@@ -1,3 +1,4 @@
+import type { executeSql } from '@nao/shared/tools';
 import type { LlmSelectedModel } from '@nao/shared/types';
 import { generateText, ModelMessage, Output } from 'ai';
 import { z } from 'zod/v4';
@@ -47,6 +48,9 @@ export class TestAgentService extends AgentService {
 	/**
 	 * Run a verification prompt to extract structured data from the agent's response.
 	 * Uses the responseMessages directly from the agent result to avoid double transformation.
+	 *
+	 * The model only picks which query result answers the question; the rows come from
+	 * the raw execute_sql output, which is never truncated the way the transcript is.
 	 */
 	async runVerification(
 		projectId: string,
@@ -71,7 +75,39 @@ export class TestAgentService extends AgentService {
 			experimental_telemetry: llmTelemetry('nao-test-verification', { projectId }),
 		});
 
-		return { data: result.output.data ?? null };
+		const { queryId, columns, data } = result.output;
+		const queryRows = queryId
+			? TestAgentService.resolveQueryRows(agentResult, { queryId, columns }, expectedColumns)
+			: null;
+
+		return { data: queryRows ?? data ?? null };
+	}
+
+	/**
+	 * Read the complete rows of a query the agent ran, renamed to the expected columns.
+	 * Returns null when the query id is unknown, so the caller can fall back.
+	 */
+	static resolveQueryRows(
+		agentResult: AgentRunResult,
+		selection: { queryId: string; columns: string[] | null },
+		expectedColumns: string[],
+	): VerificationData {
+		const output = TestAgentService.extractToolCalls(agentResult)
+			.filter((call) => call.toolName === 'execute_sql')
+			.map((call) => call.result as executeSql.Output | undefined)
+			.filter((result) => result?.id === selection.queryId)
+			.at(-1);
+
+		if (!output?.data) {
+			return null;
+		}
+
+		const sourceColumns =
+			selection.columns?.length === expectedColumns.length ? selection.columns : expectedColumns;
+
+		return output.data.map((row) =>
+			Object.fromEntries(expectedColumns.map((column, index) => [column, row[sourceColumns[index]] ?? null])),
+		);
 	}
 
 	private static _buildUserMessage(text: string): UIMessage {
@@ -85,11 +121,13 @@ export class TestAgentService extends AgentService {
 	private static _buildVerificationPrompt(columns: string[]): string {
 		return `Based on your previous analysis, provide the final answer to the original question.
 
-Format the data with these columns: ${columns.join(', ')}
+The answer has these columns: ${columns.join(', ')}
 
-Return the data as an array of rows, where each row is an object with the column names as keys.
+If one execute_sql result already holds the final answer, set queryId to its Query ID and set columns to that result's column names matching the ones above, in the same order. Leave data null: the full rows are read from the query itself, so never retype them.
 
-If you cannot answer, set data to null.`;
+Only when no single query result holds the answer, set queryId to null and return the rows in data.
+
+If you cannot answer, set every field to null.`;
 	}
 
 	private static _buildVerificationSchema(columns: string[]) {
@@ -99,9 +137,15 @@ If you cannot answer, set data to null.`;
 		);
 
 		return z.object({
+			queryId: z
+				.nullable(z.string())
+				.describe('Query ID of the execute_sql result holding the answer. Null if no single query holds it.'),
+			columns: z
+				.nullable(z.array(z.string()))
+				.describe(`Columns of that query result matching, in order: ${columns.join(', ')}`),
 			data: z
 				.nullable(z.array(rowSchema))
-				.describe('Array of rows with the data. Return null if unable to answer.'),
+				.describe('Array of rows with the data. Only fill this when queryId is null.'),
 		});
 	}
 
